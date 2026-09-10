@@ -2,14 +2,19 @@
 (function () {
   var TOKEN_KEY = 'kenyaDiaryToken';
   var EMAIL_KEY = 'kenyaDiaryEmail';
-  var HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  var DRAFT_PREFIX = 'kenyaDiaryDraft:';
   var MINUTES = ['00', '15', '30', '45'];
-  var openTimeField = null;
+  var draftTimer = null;
+  var applyingDay = false;
   var state = {
     token: '',
     profile: null,
+    date: '',
     weekStart: '',
-    week: null,
+    day: null,
+    leftBeforeNoon: false,
+    timeIn: null,
+    timeOut: null,
     panel: 'diary',
     tasks: []
   };
@@ -129,6 +134,11 @@
     return parts.hour + ':' + parts.minute + ' ' + parts.period;
   }
 
+  function isMorningTime(hhmm) {
+    var match = String(hhmm || '').match(/^(\d{1,2}):/);
+    return !!(match && Number(match[1]) < 12);
+  }
+
   function liveHours(timeIn, timeOut) {
     var startMatch = String(timeIn || '').match(/^(\d{1,2}):(\d{2})/);
     var endMatch = String(timeOut || '').match(/^(\d{1,2}):(\d{2})/);
@@ -143,119 +153,282 @@
     return ((end - start) / 60).toFixed(2);
   }
 
-  function closeTimePopover() {
-    if (openTimeField && openTimeField.close) {
-      openTimeField.close();
+  function addDaysIso(dateStr, days) {
+    var parts = String(dateStr || '').split('-');
+    var date = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]) + days));
+    return date.getUTCFullYear() + '-' +
+      ('0' + (date.getUTCMonth() + 1)).slice(-2) + '-' +
+      ('0' + date.getUTCDate()).slice(-2);
+  }
+
+  function weekdayIndex(dateStr) {
+    var parts = String(dateStr || '').split('-');
+    return new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))).getUTCDay();
+  }
+
+  function previousWeekday(dateStr) {
+    var prev = addDaysIso(dateStr, -1);
+    var day = weekdayIndex(prev);
+    if (day === 0) {
+      return addDaysIso(prev, -2);
+    }
+    if (day === 6) {
+      return addDaysIso(prev, -1);
+    }
+    return prev;
+  }
+
+  function nextWeekday(dateStr) {
+    var next = addDaysIso(dateStr, 1);
+    var day = weekdayIndex(next);
+    if (day === 6) {
+      return addDaysIso(next, 2);
+    }
+    if (day === 0) {
+      return addDaysIso(next, 1);
+    }
+    return next;
+  }
+
+  function draftKey(date) {
+    return DRAFT_PREFIX + date;
+  }
+
+  function readDraft(date) {
+    try {
+      var raw = sessionStorage.getItem(draftKey(date));
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
     }
   }
 
-  function createTimePicker(value, ariaLabel) {
-    var current = value || '';
+  function writeDraftNow() {
+    if (applyingDay || !state.date) {
+      return;
+    }
+    var payload = {
+      timeIn: state.timeIn ? state.timeIn.getValue() : '',
+      timeOut: state.timeOut ? state.timeOut.getValue() : '',
+      timeOutReason: $('time-out-reason').value,
+      assignment: $('assignment-list').value,
+      leftBeforeNoon: !!state.leftBeforeNoon,
+      savedAt: new Date().toISOString()
+    };
+    sessionStorage.setItem(draftKey(state.date), JSON.stringify(payload));
+  }
+
+  function scheduleDraft() {
+    if (applyingDay) {
+      return;
+    }
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(writeDraftNow, 400);
+  }
+
+  function clearDraft(date) {
+    sessionStorage.removeItem(draftKey(date));
+  }
+
+  function stampMs(value) {
+    if (!value) {
+      return 0;
+    }
+    var parsed = Date.parse(String(value).replace(' ', 'T'));
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
+  function draftMatchesDay(day, draft) {
+    return (draft.timeIn || '') === (day.timeIn || '') &&
+      (draft.timeOut || '') === (day.timeOut || '') &&
+      (draft.timeOutReason || '') === (day.timeOutReason || '') &&
+      (draft.assignment || '') === (day.assignment || '');
+  }
+
+  function shouldRestoreDraft(day, draft) {
+    if (!draft || draftMatchesDay(day, draft)) {
+      return false;
+    }
+    if (!day.saved) {
+      return true;
+    }
+    return stampMs(draft.savedAt) > stampMs(day.updatedAt);
+  }
+
+  function refreshHours() {
+    var timeIn = state.timeIn ? state.timeIn.getValue() : '';
+    var timeOut = state.timeOut ? state.timeOut.getValue() : '';
+    $('hours-display').textContent = liveHours(timeIn, timeOut);
+  }
+
+  function syncReasonBox() {
+    var timeOut = state.timeOut ? state.timeOut.getValue() : '';
+    var show = !!state.leftBeforeNoon || isMorningTime(timeOut);
+    $('reason-box').classList.toggle('d-none', !show);
+  }
+
+  function createClock(options) {
+    var mode = options.mode || 'in';
+    var allowMorning = mode === 'in' || !!options.allowMorning;
+    var current = options.value || '';
     var draft = parseTimeParts(current);
+    if (!draft.hour) {
+      draft = {
+        hour: mode === 'out' ? '5' : '8',
+        minute: '00',
+        period: mode === 'out' ? 'PM' : 'AM'
+      };
+    }
+    if (mode === 'out' && !allowMorning) {
+      draft.period = 'PM';
+    }
+    var committed = !!current;
+
     var wrap = document.createElement('div');
-    wrap.className = 'time-field';
+    wrap.className = 'clock-card';
+    wrap.innerHTML =
+      '<div class="clock-label"></div>' +
+      '<div class="clock-readout"></div>' +
+      '<div class="clock-stepper">' +
+        '<button type="button" class="clock-step-btn" data-hour="-1" aria-label="Earlier hour">−</button>' +
+        '<span class="clock-hour-label"></span>' +
+        '<button type="button" class="clock-step-btn" data-hour="1" aria-label="Later hour">+</button>' +
+      '</div>' +
+      '<div class="clock-minutes"></div>' +
+      '<div class="clock-period-row"></div>';
+    wrap.querySelector('.clock-label').textContent = options.label || 'Time';
 
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'time-field-btn' + (current ? '' : ' is-empty');
-    button.setAttribute('aria-label', ariaLabel);
-    button.innerHTML = '<i class="fa-solid fa-clock"></i><span></span>';
-    var label = button.querySelector('span');
-    label.textContent = formatTimeLabel(current);
+    var minutesRow = wrap.querySelector('.clock-minutes');
+    MINUTES.forEach(function (item) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'clock-minute';
+      chip.setAttribute('data-minute', item);
+      chip.textContent = item;
+      chip.addEventListener('click', function () {
+        draft.minute = item;
+        commit();
+      });
+      minutesRow.appendChild(chip);
+    });
 
-    var pop = document.createElement('div');
-    pop.className = 'time-popover d-none';
-    pop.innerHTML =
-      '<div class="time-popover-label">Hour</div><div class="time-chip-row" data-kind="hour"></div>' +
-      '<div class="time-popover-label">Minute</div><div class="time-chip-row" data-kind="minute"></div>' +
-      '<div class="time-period-row"></div>';
+    wrap.querySelectorAll('[data-hour]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var hour = Number(draft.hour || (mode === 'out' ? 5 : 8)) + Number(button.getAttribute('data-hour'));
+        if (hour > 12) {
+          hour = 1;
+        }
+        if (hour < 1) {
+          hour = 12;
+        }
+        draft.hour = String(hour);
+        if (!draft.minute) {
+          draft.minute = '00';
+        }
+        commit();
+      });
+    });
+
+    function commit() {
+      if (mode === 'out' && !allowMorning) {
+        draft.period = 'PM';
+      }
+      current = toHHmm(draft.hour, draft.minute, draft.period);
+      committed = true;
+      paint();
+      if (wrap._onChange) {
+        wrap._onChange();
+      }
+    }
+
+    function paintPeriod() {
+      var row = wrap.querySelector('.clock-period-row');
+      row.innerHTML = '';
+      if (mode === 'in' || allowMorning) {
+        ['AM', 'PM'].forEach(function (item) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'clock-period' + (draft.period === item ? ' is-selected' : '');
+          chip.textContent = item;
+          chip.addEventListener('click', function () {
+            draft.period = item;
+            commit();
+          });
+          row.appendChild(chip);
+        });
+      } else {
+        var locked = document.createElement('span');
+        locked.className = 'clock-locked';
+        locked.textContent = 'PM';
+        row.appendChild(locked);
+      }
+      if (mode === 'out') {
+        var leave = document.createElement('button');
+        leave.type = 'button';
+        leave.className = 'clock-leave' + (allowMorning ? ' is-on' : '');
+        leave.textContent = 'Left before noon';
+        leave.addEventListener('click', function () {
+          allowMorning = !allowMorning;
+          if (allowMorning) {
+            draft.period = 'AM';
+          } else {
+            draft.period = 'PM';
+          }
+          if (wrap._onMorning) {
+            wrap._onMorning(allowMorning);
+          }
+          commit();
+        });
+        row.appendChild(leave);
+      }
+    }
 
     function paint() {
-      pop.querySelectorAll('[data-chip]').forEach(function (chip) {
-        var kind = chip.getAttribute('data-kind');
-        var selected = (kind === 'hour' && chip.getAttribute('data-value') === draft.hour) ||
-          (kind === 'minute' && chip.getAttribute('data-value') === draft.minute) ||
-          (kind === 'period' && chip.getAttribute('data-value') === draft.period);
-        chip.classList.toggle('is-selected', selected);
+      var display = toHHmm(draft.hour, draft.minute, draft.period);
+      wrap.querySelector('.clock-readout').textContent = committed ? formatTimeLabel(display) : 'Set time';
+      wrap.querySelector('.clock-hour-label').textContent = (draft.hour || '—') + ' o’clock';
+      wrap.querySelectorAll('[data-minute]').forEach(function (chip) {
+        chip.classList.toggle('is-selected', chip.getAttribute('data-minute') === draft.minute);
       });
+      paintPeriod();
     }
 
-    function addChips(row, kind, values) {
-      values.forEach(function (item) {
-        var chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = 'time-chip';
-        chip.setAttribute('data-chip', '1');
-        chip.setAttribute('data-kind', kind);
-        chip.setAttribute('data-value', item);
-        chip.textContent = item;
-        chip.addEventListener('click', function (event) {
-          event.stopPropagation();
-          draft[kind] = item;
-          if (kind === 'hour' && !draft.minute) {
-            draft.minute = '00';
-          }
-          if (!draft.period) {
-            draft.period = 'AM';
-          }
-          paint();
-          var next = toHHmm(draft.hour, draft.minute, draft.period);
-          if (next) {
-            current = next;
-            label.textContent = formatTimeLabel(next);
-            button.classList.remove('is-empty');
-            wrap.close();
-            if (wrap._onChange) {
-              wrap._onChange();
-            }
-          }
-        });
-        row.appendChild(chip);
-      });
-    }
-
-    addChips(pop.querySelector('[data-kind="hour"]'), 'hour', HOURS);
-    addChips(pop.querySelector('[data-kind="minute"]'), 'minute', MINUTES);
-    addChips(pop.querySelector('.time-period-row'), 'period', ['AM', 'PM']);
     paint();
 
-    wrap.close = function () {
-      pop.classList.add('d-none');
-      if (openTimeField === wrap) {
-        openTimeField = null;
-      }
-    };
-
-    wrap.open = function () {
-      closeTimePopover();
-      draft = parseTimeParts(current);
-      paint();
-      pop.classList.remove('d-none');
-      var rect = button.getBoundingClientRect();
-      pop.style.top = (rect.bottom + 6) + 'px';
-      pop.style.left = Math.max(12, rect.left) + 'px';
-      openTimeField = wrap;
-    };
-
-    button.addEventListener('click', function (event) {
-      event.stopPropagation();
-      if (openTimeField === wrap) {
-        wrap.close();
-      } else {
-        wrap.open();
-      }
-    });
-    pop.addEventListener('click', function (event) {
-      event.stopPropagation();
-    });
-
-    wrap.appendChild(button);
-    document.body.appendChild(pop);
     wrap.getValue = function () {
-      return current;
+      return committed ? toHHmm(draft.hour, draft.minute, draft.period) : '';
+    };
+    wrap.setValue = function (hhmm, morning) {
+      current = hhmm || '';
+      committed = !!current;
+      draft = parseTimeParts(current);
+      if (!draft.hour) {
+        draft = {
+          hour: mode === 'out' ? '5' : '8',
+          minute: '00',
+          period: mode === 'out' ? 'PM' : 'AM'
+        };
+      }
+      if (mode === 'out') {
+        allowMorning = !!morning || isMorningTime(current);
+        if (!allowMorning) {
+          draft.period = 'PM';
+        }
+      }
+      paint();
+    };
+    wrap.setAllowMorning = function (on) {
+      allowMorning = !!on;
+      if (mode === 'out' && !allowMorning) {
+        draft.period = 'PM';
+      }
+      paint();
     };
     wrap.onChange = function (handler) {
       wrap._onChange = handler;
+    };
+    wrap.onMorning = function (handler) {
+      wrap._onMorning = handler;
     };
     return wrap;
   }
@@ -335,92 +508,104 @@
     }
   }
 
-  function renderWeek(week) {
-    state.week = week;
-    state.weekStart = week.weekStart;
-    $('week-label').textContent = week.weekLabel;
-    $('btn-prev-week').disabled = !week.canPrev;
-    $('stat-days').textContent = week.stats.daysLogged + ' / 5';
-    $('stat-hours').textContent = week.stats.totalHours;
-    $('stat-week-badge').textContent = week.weekLabel;
-    $('stat-week-copy').textContent = week.weekRangeShort || '';
-
-    var body = $('diary-body');
-    body.innerHTML = '';
-
-    week.days.forEach(function (day) {
-      var tr = document.createElement('tr');
-      if (day.date === week.today) {
-        tr.classList.add('is-today');
+  function renderWeekDots(day) {
+    var host = $('week-dots');
+    host.innerHTML = '';
+    (day.weekDays || []).forEach(function (item) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'week-dot';
+      if (item.saved) {
+        btn.classList.add('is-saved');
       }
-      tr.setAttribute('data-date', day.date);
-
-      var dayCell = document.createElement('td');
-      dayCell.className = 'day-cell';
-      dayCell.innerHTML = '<span class="day-name"></span><span class="day-status"></span>';
-      dayCell.querySelector('.day-name').textContent = day.weekday;
-      var status = dayCell.querySelector('.day-status');
-      status.textContent = day.saved ? 'Saved' : 'Not saved';
-      status.classList.toggle('saved', !!day.saved);
-
-      var dateCell = document.createElement('td');
-      dateCell.textContent = formatDisplayDate(day.date);
-
-      var inCell = document.createElement('td');
-      var timeIn = createTimePicker(day.timeIn, day.weekday + ' time in');
-      inCell.appendChild(timeIn);
-
-      var outCell = document.createElement('td');
-      var timeOut = createTimePicker(day.timeOut, day.weekday + ' time out');
-      outCell.appendChild(timeOut);
-
-      var assignCell = document.createElement('td');
-      var assignment = document.createElement('input');
-      assignment.type = 'text';
-      assignment.className = 'form-control-custom input-assignment';
-      assignment.maxLength = 500;
-      assignment.placeholder = 'What did you work on?';
-      assignment.value = day.assignment || '';
-      assignment.setAttribute('aria-label', day.weekday + ' job assignment');
-      assignCell.appendChild(assignment);
-
-      var hoursCell = document.createElement('td');
-      hoursCell.className = 'hours-cell';
-      hoursCell.textContent = liveHours(timeIn.getValue() || day.timeIn, timeOut.getValue() || day.timeOut);
-
-      var actionCell = document.createElement('td');
-      var saveBtn = document.createElement('button');
-      saveBtn.type = 'button';
-      saveBtn.className = 'btn-custom btn-custom-sm btn-custom-primary';
-      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Save</span>';
-      actionCell.appendChild(saveBtn);
-
-      function refreshHours() {
-        hoursCell.textContent = liveHours(timeIn.getValue(), timeOut.getValue());
+      if (item.date === day.date) {
+        btn.classList.add('is-current');
       }
-
-      timeIn.onChange(refreshHours);
-      timeOut.onChange(refreshHours);
-
-      saveBtn.addEventListener('click', function () {
-        saveDay(day.date, timeIn.getValue(), timeOut.getValue(), assignment.value, saveBtn);
+      btn.textContent = item.short;
+      btn.setAttribute('aria-label', item.weekday + (item.saved ? ' saved' : ' not saved'));
+      btn.addEventListener('click', function () {
+        if (item.date === state.date) {
+          return;
+        }
+        loadDay(item.date).catch(function () { return null; });
       });
-
-      tr.appendChild(dayCell);
-      tr.appendChild(dateCell);
-      tr.appendChild(inCell);
-      tr.appendChild(outCell);
-      tr.appendChild(assignCell);
-      tr.appendChild(hoursCell);
-      tr.appendChild(actionCell);
-      body.appendChild(tr);
+      host.appendChild(btn);
     });
   }
 
-  function loadWeek(weekStart) {
-    setPanelBusy('panel-diary', true, 'Loading week…');
-    return api('getWeek', { token: state.token, weekStart: weekStart || state.weekStart }).then(function (result) {
-      renderWeek(result);
+  function applyFormValues(timeIn, timeOut, reason, assignment, leftBeforeNoon) {
+    state.leftBeforeNoon = !!leftBeforeNoon || isMorningTime(timeOut);
+    state.timeIn.setValue(timeIn || '');
+    state.timeOut.setValue(timeOut || '', state.leftBeforeNoon);
+    $('time-out-reason').value = reason || '';
+    $('assignment-list').value = assignment || '';
+    syncReasonBox();
+    refreshHours();
+  }
+
+  function renderDay(day, options) {
+    options = options || {};
+    applyingDay = true;
+    state.day = day;
+    state.date = day.date;
+    state.weekStart = day.weekStart;
+    $('day-title').textContent = day.weekday;
+    $('day-subtitle').textContent = formatDisplayDate(day.date) + ' · ' + day.weekLabel;
+    $('week-label').textContent = day.weekLabel;
+    $('btn-prev-day').disabled = !day.canPrev;
+    $('stat-days').textContent = day.stats.daysLogged + ' / 5';
+    $('stat-hours').textContent = day.stats.totalHours;
+    $('stat-week-badge').textContent = day.weekLabel;
+    $('stat-week-copy').textContent = day.weekRangeShort || '';
+    renderWeekDots(day);
+
+    var inHost = $('time-in-host');
+    var outHost = $('time-out-host');
+    inHost.innerHTML = '';
+    outHost.innerHTML = '';
+    state.timeIn = createClock({ label: 'Time in', mode: 'in', value: day.timeIn });
+    state.timeOut = createClock({
+      label: 'Time out',
+      mode: 'out',
+      value: day.timeOut,
+      allowMorning: isMorningTime(day.timeOut) || !!day.timeOutReason
+    });
+    inHost.appendChild(state.timeIn);
+    outHost.appendChild(state.timeOut);
+
+    applyFormValues(day.timeIn, day.timeOut, day.timeOutReason, day.assignment, isMorningTime(day.timeOut) || !!day.timeOutReason);
+
+    var draft = options.skipDraft ? null : readDraft(day.date);
+    var restored = false;
+    if (shouldRestoreDraft(day, draft)) {
+      applyFormValues(draft.timeIn, draft.timeOut, draft.timeOutReason, draft.assignment, draft.leftBeforeNoon);
+      restored = true;
+    }
+    $('draft-note').classList.toggle('d-none', !restored);
+
+    function onClockChange() {
+      refreshHours();
+      syncReasonBox();
+      scheduleDraft();
+    }
+    state.timeIn.onChange(onClockChange);
+    state.timeOut.onChange(onClockChange);
+    state.timeOut.onMorning(function (on) {
+      state.leftBeforeNoon = !!on;
+      syncReasonBox();
+    });
+
+    applyingDay = false;
+  }
+
+  function loadDay(date, options) {
+    options = options || {};
+    if (state.date && !options.skipWrite) {
+      writeDraftNow();
+    }
+    setPanelBusy('panel-diary', true, 'Loading day…');
+    return api('getDay', { token: state.token, date: date || state.date }).then(function (result) {
+      renderDay(result);
       return result;
     }).catch(function (err) {
       showToast(err.message, 'error');
@@ -434,27 +619,41 @@
     });
   }
 
-  function saveDay(date, timeIn, timeOut, assignment, button) {
-    if (!timeIn || !timeOut) {
+  function collectEntry() {
+    return {
+      date: state.date,
+      timeIn: state.timeIn ? state.timeIn.getValue() : '',
+      timeOut: state.timeOut ? state.timeOut.getValue() : '',
+      assignment: $('assignment-list').value,
+      timeOutReason: state.leftBeforeNoon || isMorningTime(state.timeOut ? state.timeOut.getValue() : '')
+        ? $('time-out-reason').value
+        : ''
+    };
+  }
+
+  function saveDay(button, thenNext) {
+    var entry = collectEntry();
+    if (!entry.timeIn || !entry.timeOut) {
       showToast('Choose time in and time out first.', 'error');
-      return;
+      return Promise.resolve();
     }
-    if (!String(assignment || '').trim()) {
+    if (!String(entry.assignment || '').trim()) {
       showToast('Enter the intern job assignment.', 'error');
-      return;
+      return Promise.resolve();
     }
+    if (isMorningTime(entry.timeOut) && !String(entry.timeOutReason || '').trim()) {
+      showToast('Time out is AM. Enter a reason for leaving before noon.', 'error');
+      return Promise.resolve();
+    }
+    writeDraftNow();
     setButtonBusy(button, true, 'Saving…');
-    api('saveEntry', {
-      token: state.token,
-      entry: {
-        date: date,
-        timeIn: timeIn,
-        timeOut: timeOut,
-        assignment: assignment
+    return api('saveEntry', { token: state.token, entry: entry }).then(function (result) {
+      clearDraft(entry.date);
+      renderDay(result.day, { skipDraft: true });
+      showToast(formatDisplayDate(entry.date) + ' saved.');
+      if (thenNext && result.day && result.day.date) {
+        return loadDay(nextWeekday(result.day.date), { skipWrite: true });
       }
-    }).then(function (result) {
-      renderWeek(result.week);
-      showToast(formatDisplayDate(date) + ' saved.');
     }).catch(function (err) {
       showToast(err.message, 'error');
       if (/session expired/i.test(err.message)) {
@@ -516,7 +715,7 @@
         tr.cells[3].textContent = week.totalHours;
         tr.addEventListener('click', function () {
           showPanel('diary');
-          loadWeek(week.weekStart).catch(function () { return null; });
+          loadDay(week.weekStart).catch(function () { return null; });
         });
         body.appendChild(tr);
       });
@@ -810,27 +1009,21 @@
     applyProfile(profile);
     showView('app');
     showPanel('diary');
-    return loadWeek();
+    return loadDay();
   }
 
-  function shiftWeek(days, button) {
-    if (!state.weekStart) {
+  function shiftDay(direction, button) {
+    if (!state.date) {
       return;
     }
-    var parts = state.weekStart.split('-');
-    var date = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]) + days));
-    var next = date.getUTCFullYear() + '-' +
-      ('0' + (date.getUTCMonth() + 1)).slice(-2) + '-' +
-      ('0' + date.getUTCDate()).slice(-2);
+    var next = direction < 0 ? previousWeekday(state.date) : nextWeekday(state.date);
     setButtonBusy(button, true, 'Loading…');
-    loadWeek(next).catch(function () { return null; }).then(function () {
+    loadDay(next).catch(function () { return null; }).then(function () {
       setButtonBusy(button, false);
     });
   }
 
   function bindChrome() {
-    document.addEventListener('click', closeTimePopover);
-
     $('toggle-password').addEventListener('click', function () {
       var input = $('login-password');
       var hidden = input.getAttribute('type') === 'password';
@@ -881,11 +1074,29 @@
       showPanel('diary');
     });
 
-    $('btn-prev-week').addEventListener('click', function () {
-      shiftWeek(-7, this);
+    $('btn-prev-day').addEventListener('click', function () {
+      shiftDay(-1, this);
     });
-    $('btn-next-week').addEventListener('click', function () {
-      shiftWeek(7, this);
+    $('btn-next-day').addEventListener('click', function () {
+      shiftDay(1, this);
+    });
+    $('btn-add-line').addEventListener('click', function () {
+      var box = $('assignment-list');
+      var value = box.value;
+      if (value && !/\n$/.test(value)) {
+        value += '\n';
+      }
+      box.value = value + '- ';
+      box.focus();
+      scheduleDraft();
+    });
+    $('assignment-list').addEventListener('input', scheduleDraft);
+    $('time-out-reason').addEventListener('input', scheduleDraft);
+    $('btn-save-day').addEventListener('click', function () {
+      saveDay(this, false);
+    });
+    $('btn-save-next').addEventListener('click', function () {
+      saveDay(this, true);
     });
     $('btn-export').addEventListener('click', downloadExcel);
     $('btn-logout').addEventListener('click', function () {

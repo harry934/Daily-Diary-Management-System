@@ -62,14 +62,19 @@ To rotate the password later: set `SETUP_INTERN_PASSWORD` and run `setupChangePa
 ## What you can do in the app
 
 - Sign in with the intern email and password
-- Move week by week, labelled **Week 1**, **Week 2**, and so on
-- Choose time in / time out from one compact picker — hours fill in automatically
-- Save each weekday row
-- Download a clean `.xlsx` for the visible week
-- Open **Summary** for hours by week
+- Record **one weekday at a time** (Prev / Next skip Saturday and Sunday; nothing before 7 Sep 2026)
+- Use the **Mon–Fri week dots** to jump around the current week (lime = already saved)
+- Set time with a stepper clock. Time out stays **PM** unless you tap **Left before noon** and give a reason
+- Write the job assignment as a list (up to 4000 characters). **Add line** inserts `- `
+- Unsaved typing is kept as a **session draft** — refresh the tab and the list comes back
+- **Save day** or **Save and next**. Hours fill in from time in / out
+- Download a clean `.xlsx` for the week of the day you are on (assignment lines wrap; AM clock-out includes the reason)
+- Open **Summary** for hours by week (click a week to open its Monday)
 - Open **Tasks** to note assigned work, add subtasks, and see a completion ring
 
 Sessions last up to 6 hours (Apps Script cache limit). After that, sign in again.
+
+After a new deploy, hard-refresh the `/exec` URL so the browser does not keep the old week table.
 
 ## Security notes
 

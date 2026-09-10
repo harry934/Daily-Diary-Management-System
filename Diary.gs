@@ -3,7 +3,8 @@
  */
 
 var WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-var ASSIGNMENT_MAX_LENGTH = 500;
+var ASSIGNMENT_MAX_LENGTH = 4000;
+var REASON_MAX_LENGTH = 300;
 
 function todayNairobi_() {
   return Utilities.formatDate(new Date(), getTimezone_(), 'yyyy-MM-dd');
@@ -101,7 +102,7 @@ function calculateHours_(timeIn, timeOut) {
 }
 
 function sanitizeAssignment_(value) {
-  var text = String(value || '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim();
+  var text = String(value || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim();
   if (!text) {
     throw new Error('Enter the intern job assignment.');
   }
@@ -109,6 +110,60 @@ function sanitizeAssignment_(value) {
     throw new Error('Job assignment must be ' + ASSIGNMENT_MAX_LENGTH + ' characters or fewer.');
   }
   return text;
+}
+
+function sanitizeReason_(value) {
+  var text = String(value || '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (text.length > REASON_MAX_LENGTH) {
+    throw new Error('Reason must be ' + REASON_MAX_LENGTH + ' characters or fewer.');
+  }
+  return text;
+}
+
+function isMorningTime_(hhmm) {
+  return Number(String(hhmm).split(':')[0]) < 12;
+}
+
+function previousWeekday_(dateStr) {
+  var prev = addDays_(dateStr, -1);
+  var name = weekdayName_(prev);
+  if (name === 'Sunday') {
+    return addDays_(prev, -2);
+  }
+  if (name === 'Saturday') {
+    return addDays_(prev, -1);
+  }
+  return prev;
+}
+
+function nextWeekday_(dateStr) {
+  var next = addDays_(dateStr, 1);
+  var name = weekdayName_(next);
+  if (name === 'Saturday') {
+    return addDays_(next, 2);
+  }
+  if (name === 'Sunday') {
+    return addDays_(next, 1);
+  }
+  return next;
+}
+
+function snapToWeekday_(dateStr) {
+  var date = String(dateStr || todayNairobi_());
+  var start = getProgrammeStart_();
+  if (date < start) {
+    date = start;
+  }
+  var name = weekdayName_(date);
+  if (name === 'Saturday') {
+    date = addDays_(date, -1);
+  } else if (name === 'Sunday') {
+    date = addDays_(date, 1);
+  }
+  if (date < start) {
+    date = start;
+  }
+  return date;
 }
 
 function resolveWeekStart_(weekStart) {
@@ -150,9 +205,10 @@ function readDiaryMap_() {
       weekday: cellAsText_(row[2], 'EEEE'),
       timeIn: cellAsText_(row[3], 'HH:mm'),
       timeOut: cellAsText_(row[4], 'HH:mm'),
-      assignment: cellAsText_(row[5], 'yyyy-MM-dd'),
+      assignment: String(row[5] == null ? '' : row[5]).replace(/\r\n/g, '\n'),
       hoursWorked: cellAsText_(row[6], '0.00'),
       updatedAt: cellAsText_(row[7], 'yyyy-MM-dd HH:mm:ss'),
+      timeOutReason: cellAsText_(row[8], 'yyyy-MM-dd'),
       rowIndex: i + 2
     };
   }
@@ -178,10 +234,13 @@ function getWeek_(weekStart) {
     days.push({
       date: date,
       weekday: weekdayName_(date),
+      short: weekdayName_(date).slice(0, 3),
       timeIn: existing ? existing.timeIn : '',
       timeOut: existing ? existing.timeOut : '',
       assignment: existing ? existing.assignment : '',
       hoursWorked: existing ? existing.hoursWorked : '',
+      timeOutReason: existing ? existing.timeOutReason : '',
+      updatedAt: existing ? existing.updatedAt : '',
       saved: saved
     });
   }
@@ -201,6 +260,47 @@ function getWeek_(weekStart) {
       daysLogged: daysLogged,
       totalHours: totalHours.toFixed(2)
     }
+  };
+}
+
+function getDay_(dateStr) {
+  var date = snapToWeekday_(dateStr);
+  var week = getWeek_(mondayOf_(date));
+  var existing = null;
+  week.days.forEach(function (day) {
+    if (day.date === date) {
+      existing = day;
+    }
+  });
+  var programmeStart = getProgrammeStart_();
+  var prev = previousWeekday_(date);
+  return {
+    ok: true,
+    date: date,
+    weekday: weekdayName_(date),
+    timeIn: existing ? existing.timeIn : '',
+    timeOut: existing ? existing.timeOut : '',
+    assignment: existing ? existing.assignment : '',
+    hoursWorked: existing ? existing.hoursWorked : '',
+    timeOutReason: existing ? existing.timeOutReason : '',
+    updatedAt: existing ? existing.updatedAt : '',
+    saved: !!(existing && existing.saved),
+    weekNumber: week.weekNumber,
+    weekLabel: week.weekLabel,
+    weekRangeShort: week.weekRangeShort,
+    weekStart: week.weekStart,
+    canPrev: prev >= programmeStart,
+    canNext: true,
+    today: week.today,
+    weekDays: week.days.map(function (day) {
+      return {
+        date: day.date,
+        weekday: day.weekday,
+        short: day.short,
+        saved: day.saved
+      };
+    }),
+    stats: week.stats
   };
 }
 
@@ -273,12 +373,19 @@ function saveEntry_(entry) {
   var timeOut = normalizeTime_(entry.timeOut);
   var hoursWorked = calculateHours_(timeIn, timeOut);
   var assignment = sanitizeAssignment_(entry.assignment);
+  var timeOutReason = '';
+  if (isMorningTime_(timeOut)) {
+    timeOutReason = sanitizeReason_(entry.timeOutReason);
+    if (!timeOutReason) {
+      throw new Error('Time out is AM. Enter a reason for leaving before noon.');
+    }
+  }
   var sheet = getDiarySheet_();
   var map = readDiaryMap_();
   var existing = map[date];
   var updatedAt = nowNairobi_();
   var id = existing && existing.id ? existing.id : Utilities.getUuid();
-  var row = [id, date, weekday, timeIn, timeOut, assignment, hoursWorked, updatedAt];
+  var row = [id, date, weekday, timeIn, timeOut, assignment, hoursWorked, updatedAt, timeOutReason];
 
   if (existing && existing.rowIndex) {
     var target = sheet.getRange(existing.rowIndex, 1, 1, DIARY_HEADERS.length);
@@ -300,10 +407,11 @@ function saveEntry_(entry) {
       timeOut: timeOut,
       assignment: assignment,
       hoursWorked: hoursWorked,
+      timeOutReason: timeOutReason,
       updatedAt: updatedAt,
       saved: true
     },
-    week: getWeek_(mondayOf_(date))
+    day: getDay_(date)
   };
 }
 
@@ -328,18 +436,18 @@ function exportWeekExcel_(weekStart) {
   var sheet = temp.getSheets()[0];
   sheet.setName(week.weekLabel);
 
-  sheet.getRange('A1:F1').merge().setValue(profile.company);
-  sheet.getRange('A2:F2').merge().setValue('Internship Daily Diary');
-  sheet.getRange('A3:F3').merge().setValue('Intern: ' + profile.name);
-  sheet.getRange('A4:F4').merge().setValue('Email: ' + profile.email);
-  sheet.getRange('A5:F5').merge().setValue(week.weekLabel + ' · ' + week.weekRangeShort);
-  sheet.getRange('A6:F6').merge().setValue('Time zone: ' + profile.timezone);
+  sheet.getRange('A1:G1').merge().setValue(profile.company);
+  sheet.getRange('A2:G2').merge().setValue('Internship Daily Diary');
+  sheet.getRange('A3:G3').merge().setValue('Intern: ' + profile.name);
+  sheet.getRange('A4:G4').merge().setValue('Email: ' + profile.email);
+  sheet.getRange('A5:G5').merge().setValue(week.weekLabel + ' · ' + week.weekRangeShort);
+  sheet.getRange('A6:G6').merge().setValue('Time zone: ' + profile.timezone);
 
   sheet.getRange('A1').setFontSize(18).setFontWeight('bold').setFontColor('#051C12');
   sheet.getRange('A2').setFontSize(13).setFontWeight('bold').setFontColor('#072F1F');
   sheet.getRange('A3:A6').setFontColor('#6C7E75');
 
-  var headers = ['Day', 'Date', 'Time In', 'Time Out', 'Intern Job Assignment', 'Hours Worked'];
+  var headers = ['Day', 'Date', 'Time In', 'Time Out', 'Intern Job Assignment', 'Hours Worked', 'Time out reason'];
   sheet.getRange(8, 1, 1, headers.length).setValues([headers]);
   sheet.getRange(8, 1, 1, headers.length)
     .setFontWeight('bold')
@@ -353,10 +461,12 @@ function exportWeekExcel_(weekStart) {
       day.timeIn || '',
       day.timeOut || '',
       day.assignment || '',
-      day.hoursWorked || ''
+      day.hoursWorked || '',
+      day.timeOutReason || ''
     ];
   });
   sheet.getRange(9, 1, body.length, headers.length).setValues(body);
+  sheet.getRange(9, 5, body.length, 1).setWrap(true);
 
   sheet.getRange(15, 5).setValue('Weekly total hours').setFontWeight('bold');
   sheet.getRange(15, 6).setValue(week.stats.totalHours).setFontWeight('bold').setBackground('#B4F105');
@@ -367,6 +477,7 @@ function exportWeekExcel_(weekStart) {
   sheet.setColumnWidth(4, 100);
   sheet.setColumnWidth(5, 420);
   sheet.setColumnWidth(6, 130);
+  sheet.setColumnWidth(7, 200);
   sheet.setFrozenRows(8);
 
   SpreadsheetApp.flush();

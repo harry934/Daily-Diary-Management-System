@@ -12,7 +12,7 @@ var COMPANY_NAME = 'Kenya Shipyards Limited';
 var PROGRAMME_START_DATE = '2026-09-07';
 var APP_TIMEZONE = 'Africa/Nairobi';
 var DIARY_SHEET_NAME = 'Diary';
-var DIARY_HEADERS = ['id', 'date', 'weekday', 'timeIn', 'timeOut', 'assignment', 'hoursWorked', 'updatedAt'];
+var DIARY_HEADERS = ['id', 'date', 'weekday', 'timeIn', 'timeOut', 'assignment', 'hoursWorked', 'updatedAt', 'timeOutReason'];
 var TASKS_SHEET_NAME = 'Tasks';
 var SUBTASKS_SHEET_NAME = 'Subtasks';
 var TASKS_HEADERS = ['id', 'title', 'notes', 'createdAt', 'updatedAt'];
@@ -111,7 +111,8 @@ function ensureDiarySheet_(ss) {
   sheet.setColumnWidth(6, 360);
   sheet.setColumnWidth(7, 110);
   sheet.setColumnWidth(8, 160);
-  sheet.getRange('A:H').setNumberFormat('@');
+  sheet.setColumnWidth(9, 220);
+  sheet.getRange('A:I').setNumberFormat('@');
   sheet.getRange(1, 1, 1, DIARY_HEADERS.length).setNumberFormat('@');
   return sheet;
 }

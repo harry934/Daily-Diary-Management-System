@@ -51,6 +51,9 @@ function api(action, payload) {
       case 'getWeek':
         requireSession_(payload.token);
         return getWeek_(payload.weekStart);
+      case 'getDay':
+        requireSession_(payload.token);
+        return getDay_(payload.date);
       case 'saveEntry':
         requireSession_(payload.token);
         return saveEntry_(payload.entry);

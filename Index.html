@@ -147,19 +147,21 @@
       <section class="app-panel" id="panel-diary">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Weekly record</h1>
-            <p class="page-subtitle">Monday to Friday · Time in, time out, assignment, and hours worked</p>
+            <h1 class="page-title" id="day-title">Monday</h1>
+            <p class="page-subtitle" id="day-subtitle">7 Sep 2026 · Week 1</p>
           </div>
           <div class="week-nav">
-            <button type="button" class="btn-custom btn-custom-light" id="btn-prev-week" aria-label="Previous week">
+            <button type="button" class="btn-custom btn-custom-light" id="btn-prev-day" aria-label="Previous weekday">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
             <div class="week-nav-label" id="week-label">Week 1</div>
-            <button type="button" class="btn-custom btn-custom-light" id="btn-next-week" aria-label="Next week">
+            <button type="button" class="btn-custom btn-custom-light" id="btn-next-day" aria-label="Next weekday">
               <i class="fa-solid fa-chevron-right"></i>
             </button>
           </div>
         </div>
+
+        <div class="week-dots" id="week-dots"></div>
 
         <div class="row g-4">
           <div class="col-md-4">
@@ -193,26 +195,40 @@
           </div>
         </div>
 
-        <div class="card table-card" id="week">
-          <div class="card-header">
-            <h2 class="card-title">Daily entries</h2>
-            <span class="table-hint">Hours update as soon as both times are set</span>
+        <div class="card day-card" id="day-card">
+          <div class="day-times">
+            <div id="time-in-host"></div>
+            <div class="day-hours-box">
+              <span class="stat-label">Hours</span>
+              <div class="stat-value" id="hours-display">—</div>
+            </div>
+            <div id="time-out-host"></div>
           </div>
-          <div class="table-responsive">
-            <table class="table-custom diary-table">
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Date</th>
-                  <th>Time in</th>
-                  <th>Time out</th>
-                  <th>Intern job assignment</th>
-                  <th>Hours</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="diary-body"></tbody>
-            </table>
+
+          <div id="reason-box" class="reason-box d-none">
+            <label class="form-label-custom" for="time-out-reason">Reason for leaving before noon</label>
+            <input type="text" id="time-out-reason" class="form-control-custom" maxlength="300" placeholder="Half day, clinic, sent home…">
+          </div>
+
+          <div class="assignment-head">
+            <label class="form-label-custom" for="assignment-list">Intern job assignment</label>
+            <button type="button" class="btn-custom btn-custom-sm btn-custom-light" id="btn-add-line">
+              <i class="fa-solid fa-plus"></i>
+              <span>Add line</span>
+            </button>
+          </div>
+          <textarea id="assignment-list" class="form-control-custom assignment-list" maxlength="4000" rows="10" placeholder="- What I was assigned&#10;- What I did"></textarea>
+          <p id="draft-note" class="draft-note d-none">Draft restored — not saved yet</p>
+
+          <div class="day-actions">
+            <button type="button" class="btn-custom btn-custom-primary" id="btn-save-day">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Save day</span>
+            </button>
+            <button type="button" class="btn-custom btn-custom-secondary" id="btn-save-next">
+              <span>Save and next</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
           </div>
         </div>
       </section>
