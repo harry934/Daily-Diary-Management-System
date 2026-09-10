@@ -63,7 +63,7 @@ To rotate the password later: set `SETUP_INTERN_PASSWORD` and run `setupChangePa
 
 - Sign in with the intern email and password
 - Move week by week, labelled **Week 1**, **Week 2**, and so on
-- Choose time in / time out with hour, minute, and AM/PM — hours fill in automatically
+- Choose time in / time out from one compact picker — hours fill in automatically
 - Save each weekday row
 - Download a clean `.xlsx` for the visible week
 - Open **Summary** for hours by week
