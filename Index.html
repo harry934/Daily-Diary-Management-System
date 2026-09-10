@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Diary | Kenya Shipyards Limited</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <div id="app-boot" class="boot-screen">
+    <div class="boot-card">
+      <i class="fa-solid fa-anchor boot-icon"></i>
+      <p>Loading Daily Diary…</p>
+    </div>
+  </div>
+
+  <div id="view-login" class="login-wrapper d-none">
+    <div class="login-bg-shape login-bg-shape-1"></div>
+    <div class="login-bg-shape login-bg-shape-2"></div>
+    <div class="login-card">
+      <div class="login-brand">
+        <i class="fa-solid fa-anchor"></i>
+        <span>Kenya Shipyards</span>
+      </div>
+      <h1 class="login-title">Daily Diary</h1>
+      <p class="login-subtitle">Sign in to record Monday–Friday internship hours</p>
+      <form id="login-form" novalidate>
+        <div class="login-form-group">
+          <label for="login-email" class="login-form-label">Email Address</label>
+          <div class="login-input-group">
+            <i class="fa-solid fa-envelope input-icon"></i>
+            <input type="email" id="login-email" class="login-input" placeholder="name@company.com" autocomplete="username" required>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label for="login-password" class="login-form-label">Password</label>
+          <div class="login-input-group">
+            <i class="fa-solid fa-shield-halved input-icon"></i>
+            <input type="password" id="login-password" class="login-input login-input-password" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="password-toggle-btn" id="toggle-password" aria-label="Show password">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="login-options">
+          <label class="custom-control-label">
+            <input type="checkbox" class="custom-checkbox-input" id="remember-me">
+            <span>Remember email</span>
+          </label>
+          <span class="login-secure-note"><i class="fa-solid fa-lock"></i> Secure session</span>
+        </div>
+        <div id="login-alert" class="alert-custom alert-custom-danger d-none" role="alert">
+          <i class="fa-solid fa-circle-exclamation alert-custom-icon"></i>
+          <div class="alert-custom-content" id="login-alert-text"></div>
+        </div>
+        <button type="submit" class="btn-login" id="btn-login">
+          <span>Sign In to Diary</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+      <p class="login-footer-text">Internship programme · Africa/Nairobi</p>
+    </div>
+  </div>
+
+  <div id="view-app" class="d-none">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar-wrapper" id="sidebar">
+      <a href="#diary" class="sidebar-brand" id="brand-home">
+        <i class="fa-solid fa-anchor"></i>
+        <span>Kenya Shipyards</span>
+      </a>
+      <div class="flex-grow-1 overflow-y-auto">
+        <div class="sidebar-menu-section">
+          <div class="sidebar-menu-title">Menu</div>
+          <ul class="sidebar-menu-list">
+            <li class="sidebar-menu-item">
+              <a href="#diary" class="sidebar-menu-link active" data-panel="diary" id="nav-dashboard">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="sidebar-menu-item">
+              <a href="#summary" class="sidebar-menu-link" data-panel="summary" id="nav-summary">
+                <i class="fa-solid fa-chart-column"></i>
+                <span>Summary</span>
+              </a>
+            </li>
+            <li class="sidebar-menu-item">
+              <a href="#tasks" class="sidebar-menu-link" data-panel="tasks" id="nav-tasks">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Tasks</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-profile">
+        <div class="avatar-initials" id="sidebar-initials">KS</div>
+        <div class="sidebar-profile-info">
+          <div class="sidebar-profile-name" id="sidebar-name">Intern</div>
+          <div class="sidebar-profile-email" id="sidebar-email">email@company.com</div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="navbar-custom">
+        <div class="navbar-left">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle" type="button" aria-label="Toggle navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div>
+            <div class="navbar-kicker">Kenya Shipyards Limited</div>
+            <div class="navbar-app-title">Internship Daily Diary</div>
+          </div>
+        </div>
+        <div class="navbar-actions">
+          <button type="button" class="btn-custom btn-custom-secondary" id="btn-export">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Download Excel</span>
+          </button>
+          <div class="dropdown">
+            <button class="navbar-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="profile-dropdown">
+              <div class="avatar-initials avatar-initials-sm" id="nav-initials">KS</div>
+              <span class="navbar-profile-name d-none d-md-inline" id="nav-name">Intern</span>
+              <i class="fa-solid fa-chevron-down navbar-profile-caret"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-profile" aria-labelledby="profile-dropdown">
+              <li class="dropdown-header" id="profile-welcome">Welcome</li>
+              <li><span class="dropdown-item-text" id="profile-email">email@company.com</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <button type="button" class="dropdown-item text-danger" id="btn-logout">
+                  <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </header>
+
+      <section class="app-panel" id="panel-diary">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Weekly record</h1>
+            <p class="page-subtitle">Monday to Friday · Time in, time out, assignment, and hours worked</p>
+          </div>
+          <div class="week-nav">
+            <button type="button" class="btn-custom btn-custom-light" id="btn-prev-week" aria-label="Previous week">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="week-nav-label" id="week-label">Week 1</div>
+            <button type="button" class="btn-custom btn-custom-light" id="btn-next-week" aria-label="Next week">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="card alert-green-card">
+              <div class="position-relative z-index-2">
+                <span class="alert-green-badge" id="stat-week-badge">Week 1</span>
+                <div class="alert-green-text" id="stat-week-copy">7–11 Sep</div>
+              </div>
+              <svg class="alert-green-bg-shape" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(50,50)">
+                  <rect x="-6" y="-45" width="12" height="90" rx="6" ry="6" fill="#B4F105" />
+                  <rect x="-6" y="-45" width="12" height="90" rx="6" ry="6" fill="#B4F105" transform="rotate(60)" />
+                  <rect x="-6" y="-45" width="12" height="90" rx="6" ry="6" fill="#B4F105" transform="rotate(120)" />
+                </g>
+              </svg>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card card-stat">
+              <span class="stat-label">Days logged this week</span>
+              <div class="stat-value" id="stat-days">0 / 5</div>
+              <div class="trend-badge trend-up"><i class="fa-solid fa-calendar-check"></i><span>Monday – Friday</span></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card card-stat">
+              <span class="stat-label">Hours this week</span>
+              <div class="stat-value" id="stat-hours">0.00</div>
+              <div class="trend-badge"><i class="fa-solid fa-clock"></i><span>Fills in from time in / out</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card table-card" id="week">
+          <div class="card-header">
+            <h2 class="card-title">Daily entries</h2>
+            <span class="table-hint">Hours update as soon as both times are set</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table-custom diary-table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Date</th>
+                  <th>Time in</th>
+                  <th>Time out</th>
+                  <th>Intern job assignment</th>
+                  <th>Hours</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="diary-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="app-panel d-none" id="panel-summary">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Weekly summary</h1>
+            <p class="page-subtitle">Hours and days logged from Week 1 onward</p>
+          </div>
+        </div>
+        <div class="row g-4 mb-4">
+          <div class="col-md-6">
+            <div class="card card-stat">
+              <span class="stat-label">Total days logged</span>
+              <div class="stat-value" id="summary-days">0</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card card-stat">
+              <span class="stat-label">Total hours</span>
+              <div class="stat-value" id="summary-hours">0.00</div>
+            </div>
+          </div>
+        </div>
+        <div class="card table-card">
+          <div class="card-header">
+            <h2 class="card-title">Weeks</h2>
+            <span class="table-hint">Click a week to open it on the dashboard</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Dates</th>
+                  <th>Days logged</th>
+                  <th>Hours</th>
+                </tr>
+              </thead>
+              <tbody id="summary-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="app-panel d-none" id="panel-tasks">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Tasks</h1>
+            <p class="page-subtitle">Note work you have been given so nothing is forgotten</p>
+          </div>
+        </div>
+        <div class="card task-composer">
+          <div class="card-header">
+            <h2 class="card-title">Add a task</h2>
+          </div>
+          <form id="task-form" class="task-form">
+            <input type="text" id="task-title" class="form-control-custom" maxlength="180" placeholder="Task title" required>
+            <input type="text" id="task-notes" class="form-control-custom" maxlength="500" placeholder="Optional note">
+            <button type="submit" class="btn-custom btn-custom-primary" id="btn-add-task">
+              <i class="fa-solid fa-plus"></i>
+              <span>Add task</span>
+            </button>
+          </form>
+        </div>
+        <div id="tasks-list" class="tasks-list"></div>
+      </section>
+
+      <footer class="footer-custom">
+        <div class="footer-left">
+          <span class="footer-logo"><i class="fa-solid fa-anchor"></i> Kenya Shipyards Limited</span>
+          <span class="footer-separator">|</span>
+          <span class="footer-copy">Internship Daily Diary · Confidential intern record</span>
+        </div>
+        <div class="footer-right">
+          <span>Africa/Nairobi</span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div id="toast-host" class="toast-host"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <?!= include('JavaScript'); ?>
+</body>
+</html>

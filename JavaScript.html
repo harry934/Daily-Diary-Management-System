@@ -1,0 +1,945 @@
+<script>
+(function () {
+  var TOKEN_KEY = 'kenyaDiaryToken';
+  var EMAIL_KEY = 'kenyaDiaryEmail';
+  var HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  var MINUTES = ['00', '15', '30', '45'];
+  var openTimeField = null;
+  var state = {
+    token: '',
+    profile: null,
+    weekStart: '',
+    week: null,
+    panel: 'diary',
+    tasks: []
+  };
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function api(action, payload) {
+    return new Promise(function (resolve, reject) {
+      google.script.run
+        .withSuccessHandler(function (result) {
+          if (!result || result.ok === false) {
+            reject(new Error((result && result.error) || 'Request failed.'));
+            return;
+          }
+          resolve(result);
+        })
+        .withFailureHandler(function (err) {
+          reject(new Error(err && err.message ? err.message : String(err)));
+        })
+        .api(action, payload || {});
+    });
+  }
+
+  function setButtonBusy(button, busy, label) {
+    if (!button) {
+      return;
+    }
+    if (busy) {
+      if (!button.getAttribute('data-idle-html')) {
+        button.setAttribute('data-idle-html', button.innerHTML);
+      }
+      button.disabled = true;
+      button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>' + (label || 'Working…') + '</span>';
+    } else {
+      button.disabled = false;
+      var idle = button.getAttribute('data-idle-html');
+      if (idle) {
+        button.innerHTML = idle;
+      }
+    }
+  }
+
+  function setPanelBusy(panelId, busy, message) {
+    var panel = $(panelId);
+    if (!panel) {
+      return;
+    }
+    var overlay = panel.querySelector('.panel-busy');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'panel-busy d-none';
+      overlay.innerHTML = '<div class="panel-busy-card"><i class="fa-solid fa-spinner fa-spin"></i><span></span></div>';
+      panel.appendChild(overlay);
+    }
+    overlay.querySelector('span').textContent = message || 'Loading…';
+    overlay.classList.toggle('d-none', !busy);
+  }
+
+  function initials(name) {
+    var parts = String(name || 'Intern').trim().split(/\s+/).filter(Boolean);
+    var letters = (parts[0] ? parts[0].charAt(0) : 'I') + (parts[1] ? parts[1].charAt(0) : '');
+    return letters.toUpperCase();
+  }
+
+  function formatDisplayDate(iso) {
+    var parts = String(iso || '').split('-');
+    if (parts.length !== 3) {
+      return iso;
+    }
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return Number(parts[2]) + ' ' + months[Number(parts[1]) - 1] + ' ' + parts[0];
+  }
+
+  function parseTimeParts(hhmm) {
+    var match = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
+    if (!match) {
+      return { hour: '', minute: '', period: 'AM' };
+    }
+    var hour24 = Number(match[1]);
+    var minute = match[2];
+    if (MINUTES.indexOf(minute) === -1) {
+      var nearest = MINUTES.reduce(function (best, option) {
+        return Math.abs(Number(option) - Number(minute)) < Math.abs(Number(best) - Number(minute)) ? option : best;
+      }, MINUTES[0]);
+      minute = nearest;
+    }
+    var period = hour24 >= 12 ? 'PM' : 'AM';
+    var hour12 = hour24 % 12;
+    if (hour12 === 0) {
+      hour12 = 12;
+    }
+    return { hour: String(hour12), minute: minute, period: period };
+  }
+
+  function toHHmm(hour12, minute, period) {
+    if (!hour12 || !minute || !period) {
+      return '';
+    }
+    var hour = Number(hour12);
+    if (period === 'AM') {
+      if (hour === 12) {
+        hour = 0;
+      }
+    } else if (hour !== 12) {
+      hour += 12;
+    }
+    return ('0' + hour).slice(-2) + ':' + minute;
+  }
+
+  function formatTimeLabel(hhmm) {
+    var parts = parseTimeParts(hhmm);
+    if (!hhmm || !parts.hour || !parts.minute) {
+      return 'Set time';
+    }
+    return parts.hour + ':' + parts.minute + ' ' + parts.period;
+  }
+
+  function liveHours(timeIn, timeOut) {
+    var startMatch = String(timeIn || '').match(/^(\d{1,2}):(\d{2})/);
+    var endMatch = String(timeOut || '').match(/^(\d{1,2}):(\d{2})/);
+    if (!startMatch || !endMatch) {
+      return '—';
+    }
+    var start = Number(startMatch[1]) * 60 + Number(startMatch[2]);
+    var end = Number(endMatch[1]) * 60 + Number(endMatch[2]);
+    if (end <= start) {
+      return '—';
+    }
+    return ((end - start) / 60).toFixed(2);
+  }
+
+  function closeTimePopover() {
+    if (openTimeField && openTimeField.close) {
+      openTimeField.close();
+    }
+  }
+
+  function createTimePicker(value, ariaLabel) {
+    var current = value || '';
+    var draft = parseTimeParts(current);
+    var wrap = document.createElement('div');
+    wrap.className = 'time-field';
+
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'time-field-btn' + (current ? '' : ' is-empty');
+    button.setAttribute('aria-label', ariaLabel);
+    button.innerHTML = '<i class="fa-solid fa-clock"></i><span></span>';
+    var label = button.querySelector('span');
+    label.textContent = formatTimeLabel(current);
+
+    var pop = document.createElement('div');
+    pop.className = 'time-popover d-none';
+    pop.innerHTML =
+      '<div class="time-popover-label">Hour</div><div class="time-chip-row" data-kind="hour"></div>' +
+      '<div class="time-popover-label">Minute</div><div class="time-chip-row" data-kind="minute"></div>' +
+      '<div class="time-period-row"></div>';
+
+    function paint() {
+      pop.querySelectorAll('[data-chip]').forEach(function (chip) {
+        var kind = chip.getAttribute('data-kind');
+        var selected = (kind === 'hour' && chip.getAttribute('data-value') === draft.hour) ||
+          (kind === 'minute' && chip.getAttribute('data-value') === draft.minute) ||
+          (kind === 'period' && chip.getAttribute('data-value') === draft.period);
+        chip.classList.toggle('is-selected', selected);
+      });
+    }
+
+    function addChips(row, kind, values) {
+      values.forEach(function (item) {
+        var chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'time-chip';
+        chip.setAttribute('data-chip', '1');
+        chip.setAttribute('data-kind', kind);
+        chip.setAttribute('data-value', item);
+        chip.textContent = item;
+        chip.addEventListener('click', function (event) {
+          event.stopPropagation();
+          draft[kind] = item;
+          if (kind === 'hour' && !draft.minute) {
+            draft.minute = '00';
+          }
+          if (!draft.period) {
+            draft.period = 'AM';
+          }
+          paint();
+          var next = toHHmm(draft.hour, draft.minute, draft.period);
+          if (next) {
+            current = next;
+            label.textContent = formatTimeLabel(next);
+            button.classList.remove('is-empty');
+            wrap.close();
+            if (wrap._onChange) {
+              wrap._onChange();
+            }
+          }
+        });
+        row.appendChild(chip);
+      });
+    }
+
+    addChips(pop.querySelector('[data-kind="hour"]'), 'hour', HOURS);
+    addChips(pop.querySelector('[data-kind="minute"]'), 'minute', MINUTES);
+    addChips(pop.querySelector('.time-period-row'), 'period', ['AM', 'PM']);
+    paint();
+
+    wrap.close = function () {
+      pop.classList.add('d-none');
+      if (openTimeField === wrap) {
+        openTimeField = null;
+      }
+    };
+
+    wrap.open = function () {
+      closeTimePopover();
+      draft = parseTimeParts(current);
+      paint();
+      pop.classList.remove('d-none');
+      var rect = button.getBoundingClientRect();
+      pop.style.top = (rect.bottom + 6) + 'px';
+      pop.style.left = Math.max(12, rect.left) + 'px';
+      openTimeField = wrap;
+    };
+
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      if (openTimeField === wrap) {
+        wrap.close();
+      } else {
+        wrap.open();
+      }
+    });
+    pop.addEventListener('click', function (event) {
+      event.stopPropagation();
+    });
+
+    wrap.appendChild(button);
+    document.body.appendChild(pop);
+    wrap.getValue = function () {
+      return current;
+    };
+    wrap.onChange = function (handler) {
+      wrap._onChange = handler;
+    };
+    return wrap;
+  }
+
+  function showToast(message, type) {
+    var host = $('toast-host');
+    var item = document.createElement('div');
+    item.className = 'toast-item ' + (type || 'success');
+    item.innerHTML = '<i class="fa-solid ' + (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check') + '"></i><span></span>';
+    item.querySelector('span').textContent = message;
+    host.appendChild(item);
+    setTimeout(function () {
+      item.remove();
+    }, 4200);
+  }
+
+  function setLoginError(message) {
+    var alertBox = $('login-alert');
+    if (!message) {
+      alertBox.classList.add('d-none');
+      $('login-alert-text').textContent = '';
+      return;
+    }
+    $('login-alert-text').textContent = message;
+    alertBox.classList.remove('d-none');
+  }
+
+  function showView(name) {
+    $('app-boot').classList.add('d-none');
+    $('view-login').classList.toggle('d-none', name !== 'login');
+    $('view-app').classList.toggle('d-none', name !== 'app');
+  }
+
+  function applyProfile(profile) {
+    state.profile = profile;
+    var name = profile.name || 'Intern';
+    var email = profile.email || '';
+    var mark = initials(name);
+    $('sidebar-name').textContent = name;
+    $('sidebar-email').textContent = email;
+    $('sidebar-initials').textContent = mark;
+    $('nav-name').textContent = name;
+    $('nav-initials').textContent = mark;
+    $('profile-welcome').textContent = 'Welcome, ' + name;
+    $('profile-email').textContent = email;
+  }
+
+  function closeSidebar() {
+    $('sidebar').classList.remove('show');
+    $('sidebar-overlay').classList.remove('show');
+  }
+
+  function showPanel(name) {
+    state.panel = name;
+    ['diary', 'summary', 'tasks'].forEach(function (panel) {
+      var el = $('panel-' + panel);
+      if (el) {
+        el.classList.toggle('d-none', panel !== name);
+      }
+    });
+    document.querySelectorAll('.sidebar-menu-link').forEach(function (link) {
+      link.classList.toggle('active', link.getAttribute('data-panel') === name);
+    });
+    $('btn-export').classList.toggle('d-none', name !== 'diary');
+    closeSidebar();
+    if (name === 'summary') {
+      setPanelBusy('panel-summary', true, 'Loading summary…');
+      loadSummary().then(function () {
+        setPanelBusy('panel-summary', false);
+      });
+    }
+    if (name === 'tasks') {
+      setPanelBusy('panel-tasks', true, 'Loading tasks…');
+      loadTasks().then(function () {
+        setPanelBusy('panel-tasks', false);
+      });
+    }
+  }
+
+  function renderWeek(week) {
+    state.week = week;
+    state.weekStart = week.weekStart;
+    $('week-label').textContent = week.weekLabel;
+    $('btn-prev-week').disabled = !week.canPrev;
+    $('stat-days').textContent = week.stats.daysLogged + ' / 5';
+    $('stat-hours').textContent = week.stats.totalHours;
+    $('stat-week-badge').textContent = week.weekLabel;
+    $('stat-week-copy').textContent = week.weekRangeShort || '';
+
+    var body = $('diary-body');
+    body.innerHTML = '';
+
+    week.days.forEach(function (day) {
+      var tr = document.createElement('tr');
+      if (day.date === week.today) {
+        tr.classList.add('is-today');
+      }
+      tr.setAttribute('data-date', day.date);
+
+      var dayCell = document.createElement('td');
+      dayCell.className = 'day-cell';
+      dayCell.innerHTML = '<span class="day-name"></span><span class="day-status"></span>';
+      dayCell.querySelector('.day-name').textContent = day.weekday;
+      var status = dayCell.querySelector('.day-status');
+      status.textContent = day.saved ? 'Saved' : 'Not saved';
+      status.classList.toggle('saved', !!day.saved);
+
+      var dateCell = document.createElement('td');
+      dateCell.textContent = formatDisplayDate(day.date);
+
+      var inCell = document.createElement('td');
+      var timeIn = createTimePicker(day.timeIn, day.weekday + ' time in');
+      inCell.appendChild(timeIn);
+
+      var outCell = document.createElement('td');
+      var timeOut = createTimePicker(day.timeOut, day.weekday + ' time out');
+      outCell.appendChild(timeOut);
+
+      var assignCell = document.createElement('td');
+      var assignment = document.createElement('input');
+      assignment.type = 'text';
+      assignment.className = 'form-control-custom input-assignment';
+      assignment.maxLength = 500;
+      assignment.placeholder = 'What did you work on?';
+      assignment.value = day.assignment || '';
+      assignment.setAttribute('aria-label', day.weekday + ' job assignment');
+      assignCell.appendChild(assignment);
+
+      var hoursCell = document.createElement('td');
+      hoursCell.className = 'hours-cell';
+      hoursCell.textContent = liveHours(timeIn.getValue() || day.timeIn, timeOut.getValue() || day.timeOut);
+
+      var actionCell = document.createElement('td');
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'btn-custom btn-custom-sm btn-custom-primary';
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Save</span>';
+      actionCell.appendChild(saveBtn);
+
+      function refreshHours() {
+        hoursCell.textContent = liveHours(timeIn.getValue(), timeOut.getValue());
+      }
+
+      timeIn.onChange(refreshHours);
+      timeOut.onChange(refreshHours);
+
+      saveBtn.addEventListener('click', function () {
+        saveDay(day.date, timeIn.getValue(), timeOut.getValue(), assignment.value, saveBtn);
+      });
+
+      tr.appendChild(dayCell);
+      tr.appendChild(dateCell);
+      tr.appendChild(inCell);
+      tr.appendChild(outCell);
+      tr.appendChild(assignCell);
+      tr.appendChild(hoursCell);
+      tr.appendChild(actionCell);
+      body.appendChild(tr);
+    });
+  }
+
+  function loadWeek(weekStart) {
+    setPanelBusy('panel-diary', true, 'Loading week…');
+    return api('getWeek', { token: state.token, weekStart: weekStart || state.weekStart }).then(function (result) {
+      renderWeek(result);
+      return result;
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+      throw err;
+    }).then(function (result) {
+      setPanelBusy('panel-diary', false);
+      return result;
+    }, function (err) {
+      setPanelBusy('panel-diary', false);
+      throw err;
+    });
+  }
+
+  function saveDay(date, timeIn, timeOut, assignment, button) {
+    if (!timeIn || !timeOut) {
+      showToast('Choose time in and time out first.', 'error');
+      return;
+    }
+    if (!String(assignment || '').trim()) {
+      showToast('Enter the intern job assignment.', 'error');
+      return;
+    }
+    setButtonBusy(button, true, 'Saving…');
+    api('saveEntry', {
+      token: state.token,
+      entry: {
+        date: date,
+        timeIn: timeIn,
+        timeOut: timeOut,
+        assignment: assignment
+      }
+    }).then(function (result) {
+      renderWeek(result.week);
+      showToast(formatDisplayDate(date) + ' saved.');
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+      if (/session expired/i.test(err.message)) {
+        expireSession();
+      }
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function downloadExcel() {
+    var button = $('btn-export');
+    setButtonBusy(button, true, 'Preparing…');
+    api('exportExcel', { token: state.token, weekStart: state.weekStart }).then(function (result) {
+      var bytes = Uint8Array.from(atob(result.base64), function (char) {
+        return char.charCodeAt(0);
+      });
+      var blob = new Blob([bytes], {
+        type: result.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename || 'daily-diary.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast('Excel downloaded.');
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+      if (/session expired/i.test(err.message)) {
+        expireSession();
+      }
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function loadSummary() {
+    return api('getSummary', { token: state.token }).then(function (result) {
+      $('summary-days').textContent = result.totals.daysLogged;
+      $('summary-hours').textContent = result.totals.totalHours;
+      var body = $('summary-body');
+      body.innerHTML = '';
+      if (!result.weeks.length) {
+        var empty = document.createElement('tr');
+        empty.innerHTML = '<td colspan="4">No weeks yet.</td>';
+        body.appendChild(empty);
+        return;
+      }
+      result.weeks.forEach(function (week) {
+        var tr = document.createElement('tr');
+        tr.className = 'summary-row';
+        tr.innerHTML = '<td></td><td></td><td></td><td></td>';
+        tr.cells[0].textContent = 'Week ' + week.weekNumber;
+        tr.cells[1].textContent = week.rangeShort;
+        tr.cells[2].textContent = week.daysLogged + ' / 5';
+        tr.cells[3].textContent = week.totalHours;
+        tr.addEventListener('click', function () {
+          showPanel('diary');
+          loadWeek(week.weekStart).catch(function () { return null; });
+        });
+        body.appendChild(tr);
+      });
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+    });
+  }
+
+  function updateProgressRing(wrap, percent) {
+    var radius = 34;
+    var circ = 2 * Math.PI * radius;
+    var offset = circ - (percent / 100) * circ;
+    var value = wrap.querySelector('.progress-ring-value');
+    value.style.strokeDasharray = String(circ);
+    value.style.strokeDashoffset = String(offset);
+    wrap.querySelector('.progress-ring-label').textContent = percent + '%';
+  }
+
+  function progressRing(percent) {
+    var wrap = document.createElement('div');
+    wrap.className = 'progress-ring';
+    wrap.innerHTML =
+      '<svg viewBox="0 0 80 80" aria-hidden="true">' +
+      '<circle class="progress-ring-bg" cx="40" cy="40" r="34"></circle>' +
+      '<circle class="progress-ring-value" cx="40" cy="40" r="34"></circle>' +
+      '</svg>' +
+      '<span class="progress-ring-label"></span>';
+    updateProgressRing(wrap, percent);
+    return wrap;
+  }
+
+  function findTask(id) {
+    return state.tasks.filter(function (task) { return task.id === id; })[0] || null;
+  }
+
+  function upsertTaskState(task) {
+    var next = [];
+    var replaced = false;
+    state.tasks.forEach(function (item) {
+      if (item.id === task.id) {
+        next.push(task);
+        replaced = true;
+      } else {
+        next.push(item);
+      }
+    });
+    if (!replaced) {
+      next.unshift(task);
+    }
+    state.tasks = next;
+  }
+
+  function createSubtaskRow(task, sub) {
+    var row = document.createElement('label');
+    row.className = 'subtask-row' + (sub.done ? ' is-done' : '');
+    row.setAttribute('data-subtask-id', sub.id);
+    var check = document.createElement('input');
+    check.type = 'checkbox';
+    check.className = 'form-check-input-custom';
+    check.checked = !!sub.done;
+    check.addEventListener('change', function () {
+      toggleSubtaskRow(task.id, sub.id, check, row);
+    });
+    var text = document.createElement('span');
+    text.textContent = sub.title;
+    var delSub = document.createElement('button');
+    delSub.type = 'button';
+    delSub.className = 'subtask-delete';
+    delSub.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    delSub.setAttribute('aria-label', 'Delete subtask');
+    delSub.addEventListener('click', function (event) {
+      event.preventDefault();
+      deleteSubtaskRow(task.id, sub.id, delSub, row);
+    });
+    row.appendChild(check);
+    row.appendChild(text);
+    row.appendChild(delSub);
+    return row;
+  }
+
+  function patchTaskCard(task) {
+    upsertTaskState(task);
+    var card = document.querySelector('[data-task-id="' + task.id + '"]');
+    if (!card) {
+      var list = $('tasks-list');
+      var empty = list.querySelector('.card:not(.task-card)');
+      if (empty) {
+        empty.remove();
+      }
+      list.insertBefore(buildTaskCard(task), list.firstChild);
+      return;
+    }
+    card.querySelector('.task-card-meta').textContent = task.doneCount + ' of ' + task.totalCount + ' subtasks done';
+    updateProgressRing(card.querySelector('.progress-ring'), task.percent);
+    var subList = card.querySelector('.subtask-list');
+    var seen = {};
+    task.subtasks.forEach(function (sub) {
+      seen[sub.id] = true;
+      var row = subList.querySelector('[data-subtask-id="' + sub.id + '"]');
+      if (!row) {
+        subList.appendChild(createSubtaskRow(task, sub));
+        return;
+      }
+      row.classList.toggle('is-done', !!sub.done);
+      var check = row.querySelector('input');
+      check.checked = !!sub.done;
+      check.disabled = false;
+    });
+    Array.prototype.slice.call(subList.querySelectorAll('[data-subtask-id]')).forEach(function (row) {
+      if (!seen[row.getAttribute('data-subtask-id')]) {
+        row.remove();
+      }
+    });
+  }
+
+  function applyTaskResult(result, changedId) {
+    state.tasks = result.tasks || [];
+    if (!state.tasks.length) {
+      renderTasks(result);
+      return;
+    }
+    if (changedId) {
+      var task = findTask(changedId);
+      if (task) {
+        patchTaskCard(task);
+        return;
+      }
+      var gone = document.querySelector('[data-task-id="' + changedId + '"]');
+      if (gone) {
+        gone.remove();
+      }
+      if (!document.querySelector('.task-card')) {
+        renderTasks(result);
+      }
+      return;
+    }
+    renderTasks(result);
+  }
+
+  function toggleSubtaskRow(taskId, subId, check, row) {
+    check.disabled = true;
+    row.classList.add('is-busy');
+    api('toggleSubtask', { token: state.token, id: subId }).then(function (result) {
+      applyTaskResult(result, taskId);
+    }).catch(function (err) {
+      check.checked = !check.checked;
+      showToast(err.message, 'error');
+    }).then(function () {
+      check.disabled = false;
+      row.classList.remove('is-busy');
+    });
+  }
+
+  function deleteSubtaskRow(taskId, subId, button, row) {
+    setButtonBusy(button, true, '');
+    row.classList.add('is-busy');
+    api('deleteSubtask', { token: state.token, id: subId }).then(function (result) {
+      applyTaskResult(result, taskId);
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+      setButtonBusy(button, false);
+      row.classList.remove('is-busy');
+    });
+  }
+
+  function buildTaskCard(task) {
+    var card = document.createElement('div');
+    card.className = 'card task-card';
+    card.setAttribute('data-task-id', task.id);
+
+    var head = document.createElement('div');
+    head.className = 'task-card-head';
+
+    var info = document.createElement('div');
+    info.className = 'task-card-info';
+    var title = document.createElement('h3');
+    title.className = 'task-card-title';
+    title.textContent = task.title;
+    info.appendChild(title);
+    if (task.notes) {
+      var notes = document.createElement('p');
+      notes.className = 'task-card-notes';
+      notes.textContent = task.notes;
+      info.appendChild(notes);
+    }
+    var meta = document.createElement('p');
+    meta.className = 'task-card-meta';
+    meta.textContent = task.doneCount + ' of ' + task.totalCount + ' subtasks done';
+    info.appendChild(meta);
+
+    var actions = document.createElement('div');
+    actions.className = 'task-card-actions';
+    var delTask = document.createElement('button');
+    delTask.type = 'button';
+    delTask.className = 'btn-custom btn-custom-sm btn-custom-light';
+    delTask.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    delTask.setAttribute('aria-label', 'Delete task');
+    delTask.addEventListener('click', function () {
+      setButtonBusy(delTask, true, 'Deleting…');
+      card.classList.add('is-busy');
+      api('deleteTask', { token: state.token, id: task.id }).then(function (result) {
+        applyTaskResult(result, task.id);
+        showToast('Task deleted.');
+      }).catch(function (err) {
+        showToast(err.message, 'error');
+        setButtonBusy(delTask, false);
+        card.classList.remove('is-busy');
+      });
+    });
+    actions.appendChild(progressRing(task.percent));
+    actions.appendChild(delTask);
+    head.appendChild(info);
+    head.appendChild(actions);
+    card.appendChild(head);
+
+    var subList = document.createElement('div');
+    subList.className = 'subtask-list';
+    task.subtasks.forEach(function (sub) {
+      subList.appendChild(createSubtaskRow(task, sub));
+    });
+    card.appendChild(subList);
+
+    var addRow = document.createElement('form');
+    addRow.className = 'subtask-form';
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control-custom';
+    input.maxLength = 180;
+    input.placeholder = 'Add a subtask';
+    input.required = true;
+    var addBtn = document.createElement('button');
+    addBtn.type = 'submit';
+    addBtn.className = 'btn-custom btn-custom-sm btn-custom-primary';
+    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Add</span>';
+    addRow.appendChild(input);
+    addRow.appendChild(addBtn);
+    addRow.addEventListener('submit', function (event) {
+      event.preventDefault();
+      setButtonBusy(addBtn, true, 'Adding…');
+      api('saveSubtask', {
+        token: state.token,
+        subtask: { taskId: task.id, title: input.value }
+      }).then(function (result) {
+        input.value = '';
+        applyTaskResult(result, task.id);
+        showToast('Subtask added.');
+      }).catch(function (err) {
+        showToast(err.message, 'error');
+      }).then(function () {
+        setButtonBusy(addBtn, false);
+      });
+    });
+    card.appendChild(addRow);
+    return card;
+  }
+
+  function renderTasks(result) {
+    state.tasks = result.tasks || [];
+    var list = $('tasks-list');
+    list.innerHTML = '';
+    if (!state.tasks.length) {
+      var empty = document.createElement('div');
+      empty.className = 'card';
+      empty.textContent = 'No tasks yet. Add one above.';
+      list.appendChild(empty);
+      return;
+    }
+    state.tasks.forEach(function (task) {
+      list.appendChild(buildTaskCard(task));
+    });
+  }
+
+  function loadTasks() {
+    return api('listTasks', { token: state.token }).then(function (result) {
+      renderTasks(result);
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+    });
+  }
+
+  function expireSession() {
+    sessionStorage.removeItem(TOKEN_KEY);
+    state.token = '';
+    state.profile = null;
+    showView('login');
+  }
+
+  function enterApp(token, profile) {
+    state.token = token;
+    sessionStorage.setItem(TOKEN_KEY, token);
+    applyProfile(profile);
+    showView('app');
+    showPanel('diary');
+    return loadWeek();
+  }
+
+  function shiftWeek(days, button) {
+    if (!state.weekStart) {
+      return;
+    }
+    var parts = state.weekStart.split('-');
+    var date = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]) + days));
+    var next = date.getUTCFullYear() + '-' +
+      ('0' + (date.getUTCMonth() + 1)).slice(-2) + '-' +
+      ('0' + date.getUTCDate()).slice(-2);
+    setButtonBusy(button, true, 'Loading…');
+    loadWeek(next).catch(function () { return null; }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function bindChrome() {
+    document.addEventListener('click', closeTimePopover);
+
+    $('toggle-password').addEventListener('click', function () {
+      var input = $('login-password');
+      var hidden = input.getAttribute('type') === 'password';
+      input.setAttribute('type', hidden ? 'text' : 'password');
+      this.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+      this.querySelector('i').className = hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    });
+
+    $('login-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      setLoginError('');
+      var email = $('login-email').value.trim();
+      var password = $('login-password').value;
+      var button = $('btn-login');
+      setButtonBusy(button, true, 'Signing in…');
+      api('login', { email: email, password: password }).then(function (result) {
+        if ($('remember-me').checked) {
+          localStorage.setItem(EMAIL_KEY, email);
+        } else {
+          localStorage.removeItem(EMAIL_KEY);
+        }
+        return enterApp(result.token, result.profile);
+      }).catch(function (err) {
+        if (state.token) {
+          showToast(err.message, 'error');
+        } else {
+          setLoginError(err.message);
+        }
+      }).then(function () {
+        setButtonBusy(button, false);
+      });
+    });
+
+    $('sidebar-toggle').addEventListener('click', function () {
+      $('sidebar').classList.toggle('show');
+      $('sidebar-overlay').classList.toggle('show', $('sidebar').classList.contains('show'));
+    });
+    $('sidebar-overlay').addEventListener('click', closeSidebar);
+
+    document.querySelectorAll('[data-panel]').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        showPanel(link.getAttribute('data-panel'));
+      });
+    });
+    $('brand-home').addEventListener('click', function (event) {
+      event.preventDefault();
+      showPanel('diary');
+    });
+
+    $('btn-prev-week').addEventListener('click', function () {
+      shiftWeek(-7, this);
+    });
+    $('btn-next-week').addEventListener('click', function () {
+      shiftWeek(7, this);
+    });
+    $('btn-export').addEventListener('click', downloadExcel);
+    $('btn-logout').addEventListener('click', function () {
+      api('logout', { token: state.token }).catch(function () { return null; }).then(expireSession);
+    });
+
+    $('task-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var button = $('btn-add-task');
+      setButtonBusy(button, true, 'Adding…');
+      api('saveTask', {
+        token: state.token,
+        task: {
+          title: $('task-title').value,
+          notes: $('task-notes').value
+        }
+      }).then(function (result) {
+        $('task-title').value = '';
+        $('task-notes').value = '';
+        var newest = (result.tasks || [])[0];
+        state.tasks = result.tasks || [];
+        if (newest) {
+          patchTaskCard(newest);
+        } else {
+          renderTasks(result);
+        }
+        showToast('Task added.');
+      }).catch(function (err) {
+        showToast(err.message, 'error');
+      }).then(function () {
+        setButtonBusy(button, false);
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    bindChrome();
+    var remembered = localStorage.getItem(EMAIL_KEY) || localStorage.getItem('leyaDiaryEmail');
+    if (remembered) {
+      $('login-email').value = remembered;
+      $('remember-me').checked = true;
+    }
+
+    var token = sessionStorage.getItem(TOKEN_KEY) || sessionStorage.getItem('leyaDiaryToken');
+    if (!token) {
+      showView('login');
+      return;
+    }
+
+    api('session', { token: token }).then(function (result) {
+      return enterApp(token, result.profile);
+    }).catch(function () {
+      expireSession();
+    });
+  });
+})();
+</script>
