@@ -1,9 +1,10 @@
 <script>
 (function () {
-  var TOKEN_KEY = 'kenyaDiaryToken';
-  var EMAIL_KEY = 'kenyaDiaryEmail';
-  var DRAFT_PREFIX = 'kenyaDiaryDraft:';
+  var TOKEN_KEY = 'dailyDiaryToken';
+  var EMAIL_KEY = 'dailyDiaryEmail';
+  var DRAFT_PREFIX = 'dailyDiaryDraft:';
   var MINUTES = ['00', '15', '30', '45'];
+  var PRIORITY_LABELS = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low' };
   var draftTimer = null;
   var applyingDay = false;
   var state = {
@@ -16,7 +17,10 @@
     timeIn: null,
     timeOut: null,
     panel: 'diary',
-    tasks: []
+    tasks: [],
+    taskFilter: 'all',
+    taskToday: '',
+    editingTaskId: ''
   };
 
   function $(id) {
@@ -445,15 +449,66 @@
     }, 4200);
   }
 
-  function setLoginError(message) {
-    var alertBox = $('login-alert');
+  function setAuthError(alertId, textId, message) {
+    var alertBox = $(alertId);
     if (!message) {
       alertBox.classList.add('d-none');
-      $('login-alert-text').textContent = '';
+      $(textId).textContent = '';
       return;
     }
-    $('login-alert-text').textContent = message;
+    $(textId).textContent = message;
     alertBox.classList.remove('d-none');
+  }
+
+  function setLoginError(message) {
+    setAuthError('login-alert', 'login-alert-text', message);
+  }
+
+  function setRegisterError(message) {
+    setAuthError('register-alert', 'register-alert-text', message);
+  }
+
+  function todayIsoLocal() {
+    var date = new Date();
+    return date.getFullYear() + '-' +
+      ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+      ('0' + date.getDate()).slice(-2);
+  }
+
+  function showAuthMode(mode) {
+    var register = mode === 'register';
+    $('login-form').classList.toggle('d-none', register);
+    $('register-form').classList.toggle('d-none', !register);
+    $('auth-title').textContent = register ? 'Create your account' : 'Welcome back';
+    $('auth-subtitle').textContent = register
+      ? 'Choose the organisation name you want to use. Your diary stays private to this account.'
+      : 'Sign in to record Monday–Friday internship hours';
+    $('auth-switch').innerHTML = register
+      ? 'Already have an account? <button type="button" id="btn-show-login">Sign in</button>'
+      : 'New here? <button type="button" id="btn-show-register">Create an account</button>';
+    var switchBtn = register ? $('btn-show-login') : $('btn-show-register');
+    switchBtn.addEventListener('click', function () {
+      setLoginError('');
+      setRegisterError('');
+      showAuthMode(register ? 'login' : 'register');
+    });
+    if (register && !$('register-start').value) {
+      $('register-start').value = '2026-09-07';
+    }
+  }
+
+  function bindPasswordToggle(buttonId, inputId) {
+    $(buttonId).addEventListener('click', function () {
+      var input = $(inputId);
+      var hidden = input.getAttribute('type') === 'password';
+      input.setAttribute('type', hidden ? 'text' : 'password');
+      this.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+      this.querySelector('i').className = hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    });
+  }
+
+  function organisationName(profile) {
+    return (profile && (profile.organisation || profile.company)) || 'Daily Diary';
   }
 
   function showView(name) {
@@ -466,13 +521,18 @@
     state.profile = profile;
     var name = profile.name || 'Intern';
     var email = profile.email || '';
+    var org = organisationName(profile);
     var mark = initials(name);
+    $('brand-label').textContent = org;
+    $('navbar-kicker').textContent = org;
+    $('footer-org').textContent = org;
     $('sidebar-name').textContent = name;
     $('sidebar-email').textContent = email;
     $('sidebar-initials').textContent = mark;
     $('nav-name').textContent = name;
     $('nav-initials').textContent = mark;
     $('profile-welcome').textContent = 'Welcome, ' + name;
+    $('profile-org').textContent = org;
     $('profile-email').textContent = email;
   }
 
@@ -695,33 +755,88 @@
 
   function loadSummary() {
     return api('getSummary', { token: state.token }).then(function (result) {
-      $('summary-days').textContent = result.totals.daysLogged;
-      $('summary-hours').textContent = result.totals.totalHours;
-      var body = $('summary-body');
-      body.innerHTML = '';
+      var totals = result.totals || {};
+      $('summary-days').textContent = totals.daysLogged || 0;
+      $('summary-hours').textContent = totals.totalHours || '0.00';
+      $('summary-urgent').textContent = totals.tasksUrgent || 0;
+      $('summary-overdue').textContent = totals.tasksOverdue || 0;
+      var host = $('summary-weeks');
+      host.innerHTML = '';
       if (!result.weeks.length) {
-        var empty = document.createElement('tr');
-        empty.innerHTML = '<td colspan="4">No weeks yet.</td>';
-        body.appendChild(empty);
+        var empty = document.createElement('div');
+        empty.className = 'card';
+        empty.textContent = 'No diary weeks yet.';
+        host.appendChild(empty);
         return;
       }
-      result.weeks.forEach(function (week) {
-        var tr = document.createElement('tr');
-        tr.className = 'summary-row';
-        tr.innerHTML = '<td></td><td></td><td></td><td></td>';
-        tr.cells[0].textContent = 'Week ' + week.weekNumber;
-        tr.cells[1].textContent = week.rangeShort;
-        tr.cells[2].textContent = week.daysLogged + ' / 5';
-        tr.cells[3].textContent = week.totalHours;
-        tr.addEventListener('click', function () {
-          showPanel('diary');
-          loadDay(week.weekStart).catch(function () { return null; });
-        });
-        body.appendChild(tr);
+      result.weeks.slice().reverse().forEach(function (week) {
+        host.appendChild(buildSummaryWeek(week));
       });
     }).catch(function (err) {
       showToast(err.message, 'error');
     });
+  }
+
+  function buildSummaryWeek(week) {
+    var card = document.createElement('div');
+    card.className = 'card summary-week-card';
+    var head = document.createElement('button');
+    head.type = 'button';
+    head.className = 'summary-week-head';
+    head.innerHTML =
+      '<div><strong></strong><span class="summary-week-range"></span></div>' +
+      '<div class="summary-week-stats"><span></span><span></span><i class="fa-solid fa-chevron-down"></i></div>';
+    head.querySelector('strong').textContent = 'Week ' + week.weekNumber;
+    head.querySelector('.summary-week-range').textContent = week.rangeShort;
+    var stats = head.querySelectorAll('.summary-week-stats span');
+    stats[0].textContent = week.daysLogged + ' / 5 days';
+    stats[1].textContent = week.totalHours + ' hrs';
+    var body = document.createElement('div');
+    body.className = 'summary-week-body';
+    (week.days || []).forEach(function (day) {
+      var row = document.createElement('div');
+      row.className = 'summary-day' + (day.saved ? '' : ' is-empty');
+      var top = document.createElement('div');
+      top.className = 'summary-day-top';
+      var title = document.createElement('button');
+      title.type = 'button';
+      title.className = 'summary-day-open';
+      title.textContent = day.weekday + ' · ' + formatDisplayDate(day.date);
+      title.addEventListener('click', function () {
+        showPanel('diary');
+        loadDay(day.date).catch(function () { return null; });
+      });
+      var hours = document.createElement('span');
+      hours.textContent = day.saved ? (day.timeIn + ' – ' + day.timeOut + ' · ' + day.hoursWorked + ' hrs') : 'Not logged';
+      top.appendChild(title);
+      top.appendChild(hours);
+      row.appendChild(top);
+      if (day.saved && day.assignment) {
+        var assignment = document.createElement('pre');
+        assignment.className = 'summary-assignment';
+        assignment.textContent = day.assignment;
+        row.appendChild(assignment);
+      }
+      if (day.saved && day.timeOutReason) {
+        var reason = document.createElement('p');
+        reason.className = 'summary-reason';
+        reason.textContent = 'Left before noon: ' + day.timeOutReason;
+        row.appendChild(reason);
+      }
+      body.appendChild(row);
+    });
+    head.addEventListener('click', function (event) {
+      if (event.target.closest('.summary-day-open')) {
+        return;
+      }
+      card.classList.toggle('is-open');
+    });
+    card.appendChild(head);
+    card.appendChild(body);
+    if (week.weekStart === state.weekStart) {
+      card.classList.add('is-open');
+    }
+    return card;
   }
 
   function updateProgressRing(wrap, percent) {
@@ -747,25 +862,66 @@
     return wrap;
   }
 
-  function findTask(id) {
-    return state.tasks.filter(function (task) { return task.id === id; })[0] || null;
+  function dueBucket(dueDate, today) {
+    if (!dueDate) {
+      return 'none';
+    }
+    if (dueDate < today) {
+      return 'overdue';
+    }
+    if (dueDate <= addDaysIso(today, 2)) {
+      return 'soon';
+    }
+    return 'upcoming';
   }
 
-  function upsertTaskState(task) {
-    var next = [];
-    var replaced = false;
-    state.tasks.forEach(function (item) {
-      if (item.id === task.id) {
-        next.push(task);
-        replaced = true;
-      } else {
-        next.push(item);
-      }
-    });
-    if (!replaced) {
-      next.unshift(task);
+  function isTaskComplete(task) {
+    return !!(task.complete || (task.totalCount > 0 && task.doneCount === task.totalCount));
+  }
+
+  function taskMatchesFilter(task, filter, today) {
+    if (filter === 'all') {
+      return true;
     }
-    state.tasks = next;
+    if (filter === 'urgent') {
+      return task.priority === 'urgent' && !isTaskComplete(task);
+    }
+    if (filter === 'soon') {
+      var bucket = dueBucket(task.dueDate, today);
+      return !isTaskComplete(task) && (bucket === 'overdue' || bucket === 'soon');
+    }
+    if (filter === 'open') {
+      return !isTaskComplete(task);
+    }
+    return true;
+  }
+
+  function resetTaskForm() {
+    state.editingTaskId = '';
+    $('task-id').value = '';
+    $('task-title').value = '';
+    $('task-notes').value = '';
+    $('task-priority').value = 'medium';
+    $('task-due').value = '';
+    $('task-form-title').textContent = 'Add a task';
+    $('btn-add-task').innerHTML = '<i class="fa-solid fa-plus"></i><span>Add task</span>';
+    $('btn-add-task').removeAttribute('data-idle-html');
+    $('btn-cancel-edit').classList.add('d-none');
+  }
+
+  function startEditTask(task) {
+    state.editingTaskId = task.id;
+    $('task-id').value = task.id;
+    $('task-title').value = task.title || '';
+    $('task-notes').value = task.notes || '';
+    $('task-priority').value = task.priority || 'medium';
+    $('task-due').value = task.dueDate || '';
+    $('task-form-title').textContent = 'Edit task';
+    $('btn-add-task').innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Save changes</span>';
+    $('btn-add-task').removeAttribute('data-idle-html');
+    $('btn-cancel-edit').classList.remove('d-none');
+    $('task-title').focus();
+    $('panel-tasks').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function createSubtaskRow(task, sub) {
@@ -796,62 +952,7 @@
     return row;
   }
 
-  function patchTaskCard(task) {
-    upsertTaskState(task);
-    var card = document.querySelector('[data-task-id="' + task.id + '"]');
-    if (!card) {
-      var list = $('tasks-list');
-      var empty = list.querySelector('.card:not(.task-card)');
-      if (empty) {
-        empty.remove();
-      }
-      list.insertBefore(buildTaskCard(task), list.firstChild);
-      return;
-    }
-    card.querySelector('.task-card-meta').textContent = task.doneCount + ' of ' + task.totalCount + ' subtasks done';
-    updateProgressRing(card.querySelector('.progress-ring'), task.percent);
-    var subList = card.querySelector('.subtask-list');
-    var seen = {};
-    task.subtasks.forEach(function (sub) {
-      seen[sub.id] = true;
-      var row = subList.querySelector('[data-subtask-id="' + sub.id + '"]');
-      if (!row) {
-        subList.appendChild(createSubtaskRow(task, sub));
-        return;
-      }
-      row.classList.toggle('is-done', !!sub.done);
-      var check = row.querySelector('input');
-      check.checked = !!sub.done;
-      check.disabled = false;
-    });
-    Array.prototype.slice.call(subList.querySelectorAll('[data-subtask-id]')).forEach(function (row) {
-      if (!seen[row.getAttribute('data-subtask-id')]) {
-        row.remove();
-      }
-    });
-  }
-
-  function applyTaskResult(result, changedId) {
-    state.tasks = result.tasks || [];
-    if (!state.tasks.length) {
-      renderTasks(result);
-      return;
-    }
-    if (changedId) {
-      var task = findTask(changedId);
-      if (task) {
-        patchTaskCard(task);
-        return;
-      }
-      var gone = document.querySelector('[data-task-id="' + changedId + '"]');
-      if (gone) {
-        gone.remove();
-      }
-      if (!document.querySelector('.task-card')) {
-        renderTasks(result);
-      }
-      return;
-    }
+  function applyTaskResult(result) {
     renderTasks(result);
   }
 
@@ -859,7 +960,7 @@
     check.disabled = true;
     row.classList.add('is-busy');
     api('toggleSubtask', { token: state.token, id: subId }).then(function (result) {
-      applyTaskResult(result, taskId);
+      applyTaskResult(result);
     }).catch(function (err) {
       check.checked = !check.checked;
       showToast(err.message, 'error');
@@ -873,7 +974,7 @@
     setButtonBusy(button, true, '');
     row.classList.add('is-busy');
     api('deleteSubtask', { token: state.token, id: subId }).then(function (result) {
-      applyTaskResult(result, taskId);
+      applyTaskResult(result);
     }).catch(function (err) {
       showToast(err.message, 'error');
       setButtonBusy(button, false);
@@ -895,6 +996,22 @@
     title.className = 'task-card-title';
     title.textContent = task.title;
     info.appendChild(title);
+
+    var tags = document.createElement('div');
+    tags.className = 'task-tags';
+    var priority = document.createElement('span');
+    priority.className = 'priority-tag is-' + (task.priority || 'medium');
+    priority.textContent = PRIORITY_LABELS[task.priority] || 'Medium';
+    tags.appendChild(priority);
+    if (task.dueDate) {
+      var due = document.createElement('span');
+      var bucket = dueBucket(task.dueDate, state.taskToday || todayIsoLocal());
+      due.className = 'due-date' + (bucket === 'overdue' ? ' is-overdue' : bucket === 'soon' ? ' is-soon' : '');
+      due.textContent = (bucket === 'overdue' ? 'Overdue · ' : 'Due · ') + formatDisplayDate(task.dueDate);
+      tags.appendChild(due);
+    }
+    info.appendChild(tags);
+
     if (task.notes) {
       var notes = document.createElement('p');
       notes.className = 'task-card-notes';
@@ -908,6 +1025,14 @@
 
     var actions = document.createElement('div');
     actions.className = 'task-card-actions';
+    var editTask = document.createElement('button');
+    editTask.type = 'button';
+    editTask.className = 'btn-custom btn-custom-sm btn-custom-light';
+    editTask.innerHTML = '<i class="fa-solid fa-pen"></i>';
+    editTask.setAttribute('aria-label', 'Edit task');
+    editTask.addEventListener('click', function () {
+      startEditTask(task);
+    });
     var delTask = document.createElement('button');
     delTask.type = 'button';
     delTask.className = 'btn-custom btn-custom-sm btn-custom-light';
@@ -917,7 +1042,10 @@
       setButtonBusy(delTask, true, 'Deleting…');
       card.classList.add('is-busy');
       api('deleteTask', { token: state.token, id: task.id }).then(function (result) {
-        applyTaskResult(result, task.id);
+        if (state.editingTaskId === task.id) {
+          resetTaskForm();
+        }
+        applyTaskResult(result);
         showToast('Task deleted.');
       }).catch(function (err) {
         showToast(err.message, 'error');
@@ -926,6 +1054,7 @@
       });
     });
     actions.appendChild(progressRing(task.percent));
+    actions.appendChild(editTask);
     actions.appendChild(delTask);
     head.appendChild(info);
     head.appendChild(actions);
@@ -960,7 +1089,7 @@
         subtask: { taskId: task.id, title: input.value }
       }).then(function (result) {
         input.value = '';
-        applyTaskResult(result, task.id);
+        applyTaskResult(result);
         showToast('Subtask added.');
       }).catch(function (err) {
         showToast(err.message, 'error');
@@ -974,8 +1103,13 @@
 
   function renderTasks(result) {
     state.tasks = result.tasks || [];
+    state.taskToday = result.today || todayIsoLocal();
     var list = $('tasks-list');
     list.innerHTML = '';
+    var today = state.taskToday;
+    var filtered = state.tasks.filter(function (task) {
+      return taskMatchesFilter(task, state.taskFilter, today);
+    });
     if (!state.tasks.length) {
       var empty = document.createElement('div');
       empty.className = 'card';
@@ -983,8 +1117,36 @@
       list.appendChild(empty);
       return;
     }
-    state.tasks.forEach(function (task) {
-      list.appendChild(buildTaskCard(task));
+    if (!filtered.length) {
+      var none = document.createElement('div');
+      none.className = 'card';
+      none.textContent = 'No tasks match this filter.';
+      list.appendChild(none);
+      return;
+    }
+    var groups = [
+      { id: 'overdue', title: 'Overdue' },
+      { id: 'soon', title: 'Due soon' },
+      { id: 'upcoming', title: 'Upcoming' },
+      { id: 'none', title: 'No date' }
+    ];
+    groups.forEach(function (group) {
+      var items = filtered.filter(function (task) {
+        return dueBucket(task.dueDate, today) === group.id;
+      });
+      if (!items.length) {
+        return;
+      }
+      var section = document.createElement('div');
+      section.className = 'task-group';
+      var heading = document.createElement('h3');
+      heading.className = 'task-group-title';
+      heading.textContent = group.title;
+      section.appendChild(heading);
+      items.forEach(function (task) {
+        section.appendChild(buildTaskCard(task));
+      });
+      list.appendChild(section);
     });
   }
 
@@ -996,11 +1158,50 @@
     });
   }
 
+  function hideTaskAlertModal() {
+    $('task-alert-modal').classList.add('d-none');
+  }
+
+  function showTaskAlertModal(alerts) {
+    var list = $('task-alert-list');
+    list.innerHTML = '';
+    alerts.forEach(function (task) {
+      var item = document.createElement('div');
+      item.className = 'alert-modal-item';
+      var tag = document.createElement('span');
+      tag.className = 'priority-tag is-' + (task.priority || 'medium');
+      tag.textContent = PRIORITY_LABELS[task.priority] || 'Medium';
+      var title = document.createElement('strong');
+      title.textContent = task.title;
+      var due = document.createElement('span');
+      due.className = 'alert-modal-due';
+      due.textContent = task.dueDate ? formatDisplayDate(task.dueDate) : 'No due date';
+      item.appendChild(tag);
+      item.appendChild(title);
+      item.appendChild(due);
+      list.appendChild(item);
+    });
+    $('task-alert-modal').classList.remove('d-none');
+  }
+
+  function maybeShowTaskAlerts() {
+    return api('getTaskAlerts', { token: state.token }).then(function (result) {
+      if (result.alerts && result.alerts.length) {
+        showTaskAlertModal(result.alerts);
+      }
+    }).catch(function () {
+      return null;
+    });
+  }
+
   function expireSession() {
     sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem('kenyaDiaryToken');
     state.token = '';
     state.profile = null;
+    hideTaskAlertModal();
     showView('login');
+    showAuthMode('login');
   }
 
   function enterApp(token, profile) {
@@ -1009,7 +1210,10 @@
     applyProfile(profile);
     showView('app');
     showPanel('diary');
-    return loadDay();
+    return loadDay().then(function (result) {
+      maybeShowTaskAlerts();
+      return result;
+    });
   }
 
   function shiftDay(direction, button) {
@@ -1024,14 +1228,8 @@
   }
 
   function bindChrome() {
-    $('toggle-password').addEventListener('click', function () {
-      var input = $('login-password');
-      var hidden = input.getAttribute('type') === 'password';
-      input.setAttribute('type', hidden ? 'text' : 'password');
-      this.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
-      this.querySelector('i').className = hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
-    });
-
+    bindPasswordToggle('toggle-password', 'login-password');
+    bindPasswordToggle('toggle-register-password', 'register-password');
     $('login-form').addEventListener('submit', function (event) {
       event.preventDefault();
       setLoginError('');
@@ -1052,6 +1250,29 @@
         } else {
           setLoginError(err.message);
         }
+      }).then(function () {
+        setButtonBusy(button, false);
+      });
+    });
+
+    $('register-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      setRegisterError('');
+      var button = $('btn-register');
+      setButtonBusy(button, true, 'Creating account…');
+      api('register', {
+        name: $('register-name').value,
+        organisation: $('register-org').value,
+        email: $('register-email').value,
+        password: $('register-password').value,
+        programmeStart: $('register-start').value
+      }).then(function (result) {
+        localStorage.setItem(EMAIL_KEY, $('register-email').value.trim().toLowerCase());
+        $('login-email').value = $('register-email').value.trim();
+        $('remember-me').checked = true;
+        return enterApp(result.token, result.profile);
+      }).catch(function (err) {
+        setRegisterError(err.message);
       }).then(function () {
         setButtonBusy(button, false);
       });
@@ -1103,27 +1324,43 @@
       api('logout', { token: state.token }).catch(function () { return null; }).then(expireSession);
     });
 
+    $('task-filters').addEventListener('click', function (event) {
+      var chip = event.target.closest('[data-filter]');
+      if (!chip) {
+        return;
+      }
+      state.taskFilter = chip.getAttribute('data-filter');
+      Array.prototype.slice.call($('task-filters').querySelectorAll('[data-filter]')).forEach(function (item) {
+        item.classList.toggle('is-active', item === chip);
+      });
+      renderTasks({ tasks: state.tasks, today: state.taskToday });
+    });
+
+    $('btn-cancel-edit').addEventListener('click', resetTaskForm);
+    $('btn-alert-dismiss').addEventListener('click', hideTaskAlertModal);
+    $('btn-alert-tasks').addEventListener('click', function () {
+      hideTaskAlertModal();
+      showPanel('tasks');
+    });
+
     $('task-form').addEventListener('submit', function (event) {
       event.preventDefault();
       var button = $('btn-add-task');
-      setButtonBusy(button, true, 'Adding…');
+      var editing = !!$('task-id').value;
+      setButtonBusy(button, true, editing ? 'Saving…' : 'Adding…');
       api('saveTask', {
         token: state.token,
         task: {
+          id: $('task-id').value || undefined,
           title: $('task-title').value,
-          notes: $('task-notes').value
+          notes: $('task-notes').value,
+          priority: $('task-priority').value,
+          dueDate: $('task-due').value
         }
       }).then(function (result) {
-        $('task-title').value = '';
-        $('task-notes').value = '';
-        var newest = (result.tasks || [])[0];
-        state.tasks = result.tasks || [];
-        if (newest) {
-          patchTaskCard(newest);
-        } else {
-          renderTasks(result);
-        }
-        showToast('Task added.');
+        resetTaskForm();
+        applyTaskResult(result);
+        showToast(editing ? 'Task updated.' : 'Task added.');
       }).catch(function (err) {
         showToast(err.message, 'error');
       }).then(function () {
@@ -1134,13 +1371,21 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     bindChrome();
-    var remembered = localStorage.getItem(EMAIL_KEY) || localStorage.getItem('leyaDiaryEmail');
+    showAuthMode('login');
+    var remembered = localStorage.getItem(EMAIL_KEY) ||
+      localStorage.getItem('kenyaDiaryEmail') ||
+      localStorage.getItem('leyaDiaryEmail');
     if (remembered) {
       $('login-email').value = remembered;
       $('remember-me').checked = true;
     }
+    if (!$('register-start').value) {
+      $('register-start').value = '2026-09-07';
+    }
 
-    var token = sessionStorage.getItem(TOKEN_KEY) || sessionStorage.getItem('leyaDiaryToken');
+    var token = sessionStorage.getItem(TOKEN_KEY) ||
+      sessionStorage.getItem('kenyaDiaryToken') ||
+      sessionStorage.getItem('leyaDiaryToken');
     if (!token) {
       showView('login');
       return;

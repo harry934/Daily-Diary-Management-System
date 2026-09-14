@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Diary | Kenya Shipyards Limited</title>
+  <title>Daily Diary</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
 <body>
   <div id="app-boot" class="boot-screen">
     <div class="boot-card">
-      <i class="fa-solid fa-anchor boot-icon"></i>
+      <i class="fa-solid fa-book-open boot-icon"></i>
       <p>Loading Daily Diary…</p>
     </div>
   </div>
@@ -24,11 +24,12 @@
     <div class="login-bg-shape login-bg-shape-2"></div>
     <div class="login-card">
       <div class="login-brand">
-        <i class="fa-solid fa-anchor"></i>
-        <span>Kenya Shipyards</span>
+        <i class="fa-solid fa-book-open"></i>
+        <span>Daily Diary</span>
       </div>
-      <h1 class="login-title">Daily Diary</h1>
-      <p class="login-subtitle">Sign in to record Monday–Friday internship hours</p>
+      <h1 class="login-title" id="auth-title">Welcome back</h1>
+      <p class="login-subtitle" id="auth-subtitle">Sign in to record Monday–Friday internship hours</p>
+
       <form id="login-form" novalidate>
         <div class="login-form-group">
           <label for="login-email" class="login-form-label">Email Address</label>
@@ -63,7 +64,61 @@
           <i class="fa-solid fa-arrow-right"></i>
         </button>
       </form>
-      <p class="login-footer-text">Internship programme · Africa/Nairobi</p>
+
+      <form id="register-form" class="d-none" novalidate>
+        <div class="login-form-group">
+          <label for="register-name" class="login-form-label">Full name</label>
+          <div class="login-input-group">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input type="text" id="register-name" class="login-input" maxlength="80" placeholder="Your name" autocomplete="name" required>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label for="register-org" class="login-form-label">Organisation name</label>
+          <div class="login-input-group">
+            <i class="fa-solid fa-building input-icon"></i>
+            <input type="text" id="register-org" class="login-input" maxlength="80" placeholder="The name you want to use" autocomplete="organization" required>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label for="register-email" class="login-form-label">Email Address</label>
+          <div class="login-input-group">
+            <i class="fa-solid fa-envelope input-icon"></i>
+            <input type="email" id="register-email" class="login-input" placeholder="name@company.com" autocomplete="email" required>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label for="register-password" class="login-form-label">Password</label>
+          <div class="login-input-group">
+            <i class="fa-solid fa-shield-halved input-icon"></i>
+            <input type="password" id="register-password" class="login-input login-input-password" placeholder="At least 8 characters" autocomplete="new-password" required minlength="8">
+            <button type="button" class="password-toggle-btn" id="toggle-register-password" aria-label="Show password">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label for="register-start" class="login-form-label">Programme start date</label>
+          <div class="login-input-group">
+            <i class="fa-solid fa-calendar-day input-icon"></i>
+            <input type="date" id="register-start" class="login-input" required>
+          </div>
+        </div>
+        <div id="register-alert" class="alert-custom alert-custom-danger d-none" role="alert">
+          <i class="fa-solid fa-circle-exclamation alert-custom-icon"></i>
+          <div class="alert-custom-content" id="register-alert-text"></div>
+        </div>
+        <button type="submit" class="btn-login" id="btn-register">
+          <span>Create account</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <p class="auth-switch" id="auth-switch">
+        New here?
+        <button type="button" id="btn-show-register">Create an account</button>
+      </p>
+      <p class="login-footer-text">Monday–Friday internship diary · Africa/Nairobi</p>
     </div>
   </div>
 
@@ -71,8 +126,8 @@
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar-wrapper" id="sidebar">
       <a href="#diary" class="sidebar-brand" id="brand-home">
-        <i class="fa-solid fa-anchor"></i>
-        <span>Kenya Shipyards</span>
+        <i class="fa-solid fa-book-open"></i>
+        <span id="brand-label">Daily Diary</span>
       </a>
       <div class="flex-grow-1 overflow-y-auto">
         <div class="sidebar-menu-section">
@@ -100,7 +155,7 @@
         </div>
       </div>
       <div class="sidebar-profile">
-        <div class="avatar-initials" id="sidebar-initials">KS</div>
+        <div class="avatar-initials" id="sidebar-initials">DD</div>
         <div class="sidebar-profile-info">
           <div class="sidebar-profile-name" id="sidebar-name">Intern</div>
           <div class="sidebar-profile-email" id="sidebar-email">email@company.com</div>
@@ -115,7 +170,7 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <div>
-            <div class="navbar-kicker">Kenya Shipyards Limited</div>
+            <div class="navbar-kicker" id="navbar-kicker">Daily Diary</div>
             <div class="navbar-app-title">Internship Daily Diary</div>
           </div>
         </div>
@@ -126,12 +181,13 @@
           </button>
           <div class="dropdown">
             <button class="navbar-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="profile-dropdown">
-              <div class="avatar-initials avatar-initials-sm" id="nav-initials">KS</div>
+              <div class="avatar-initials avatar-initials-sm" id="nav-initials">DD</div>
               <span class="navbar-profile-name d-none d-md-inline" id="nav-name">Intern</span>
               <i class="fa-solid fa-chevron-down navbar-profile-caret"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-profile" aria-labelledby="profile-dropdown">
               <li class="dropdown-header" id="profile-welcome">Welcome</li>
+              <li><span class="dropdown-item-text" id="profile-org">Organisation</span></li>
               <li><span class="dropdown-item-text" id="profile-email">email@company.com</span></li>
               <li><hr class="dropdown-divider"></li>
               <li>
@@ -236,78 +292,104 @@
       <section class="app-panel d-none" id="panel-summary">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Weekly summary</h1>
-            <p class="page-subtitle">Hours and days logged from Week 1 onward</p>
+            <h1 class="page-title">Diary summary</h1>
+            <p class="page-subtitle">Every logged day, assignment, and hour from Week 1 onward</p>
           </div>
         </div>
         <div class="row g-4 mb-4">
-          <div class="col-md-6">
+          <div class="col-md-3 col-6">
             <div class="card card-stat">
               <span class="stat-label">Total days logged</span>
               <div class="stat-value" id="summary-days">0</div>
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-3 col-6">
             <div class="card card-stat">
               <span class="stat-label">Total hours</span>
               <div class="stat-value" id="summary-hours">0.00</div>
             </div>
           </div>
-        </div>
-        <div class="card table-card">
-          <div class="card-header">
-            <h2 class="card-title">Weeks</h2>
-            <span class="table-hint">Click a week to open it on the dashboard</span>
+          <div class="col-md-3 col-6">
+            <div class="card card-stat">
+              <span class="stat-label">Urgent tasks</span>
+              <div class="stat-value" id="summary-urgent">0</div>
+            </div>
           </div>
-          <div class="table-responsive">
-            <table class="table-custom">
-              <thead>
-                <tr>
-                  <th>Week</th>
-                  <th>Dates</th>
-                  <th>Days logged</th>
-                  <th>Hours</th>
-                </tr>
-              </thead>
-              <tbody id="summary-body"></tbody>
-            </table>
+          <div class="col-md-3 col-6">
+            <div class="card card-stat">
+              <span class="stat-label">Overdue tasks</span>
+              <div class="stat-value" id="summary-overdue">0</div>
+            </div>
           </div>
         </div>
+        <div id="summary-weeks" class="summary-weeks"></div>
       </section>
 
       <section class="app-panel d-none" id="panel-tasks">
         <div class="page-header">
           <div>
             <h1 class="page-title">Tasks</h1>
-            <p class="page-subtitle">Note work you have been given so nothing is forgotten</p>
+            <p class="page-subtitle">Organise assigned work by priority and due date</p>
           </div>
         </div>
         <div class="card task-composer">
           <div class="card-header">
-            <h2 class="card-title">Add a task</h2>
+            <h2 class="card-title" id="task-form-title">Add a task</h2>
           </div>
           <form id="task-form" class="task-form">
+            <input type="hidden" id="task-id" value="">
             <input type="text" id="task-title" class="form-control-custom" maxlength="180" placeholder="Task title" required>
             <input type="text" id="task-notes" class="form-control-custom" maxlength="500" placeholder="Optional note">
+            <select id="task-priority" class="form-control-custom" aria-label="Priority">
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium" selected>Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <input type="date" id="task-due" class="form-control-custom" aria-label="Due date">
             <button type="submit" class="btn-custom btn-custom-primary" id="btn-add-task">
               <i class="fa-solid fa-plus"></i>
               <span>Add task</span>
             </button>
+            <button type="button" class="btn-custom btn-custom-light d-none" id="btn-cancel-edit">Cancel</button>
           </form>
+        </div>
+        <div class="task-filters" id="task-filters">
+          <button type="button" class="filter-chip is-active" data-filter="all">All</button>
+          <button type="button" class="filter-chip" data-filter="urgent">Urgent</button>
+          <button type="button" class="filter-chip" data-filter="soon">Due soon</button>
+          <button type="button" class="filter-chip" data-filter="open">Open</button>
         </div>
         <div id="tasks-list" class="tasks-list"></div>
       </section>
 
       <footer class="footer-custom">
         <div class="footer-left">
-          <span class="footer-logo"><i class="fa-solid fa-anchor"></i> Kenya Shipyards Limited</span>
+          <span class="footer-logo"><i class="fa-solid fa-book-open"></i> <span id="footer-org">Daily Diary</span></span>
           <span class="footer-separator">|</span>
-          <span class="footer-copy">Internship Daily Diary · Confidential intern record</span>
+          <span class="footer-copy">Internship Daily Diary</span>
         </div>
         <div class="footer-right">
           <span>Africa/Nairobi</span>
         </div>
       </footer>
+    </div>
+  </div>
+
+  <div id="task-alert-modal" class="alert-modal d-none" role="dialog" aria-modal="true" aria-labelledby="task-alert-title">
+    <div class="alert-modal-card">
+      <div class="alert-modal-head">
+        <i class="fa-solid fa-bell"></i>
+        <div>
+          <h2 id="task-alert-title">Needs attention</h2>
+          <p>These tasks are urgent or due soon.</p>
+        </div>
+      </div>
+      <div id="task-alert-list" class="alert-modal-list"></div>
+      <div class="alert-modal-actions">
+        <button type="button" class="btn-custom btn-custom-light" id="btn-alert-dismiss">Dismiss</button>
+        <button type="button" class="btn-custom btn-custom-primary" id="btn-alert-tasks">Open tasks</button>
+      </div>
     </div>
   </div>
 

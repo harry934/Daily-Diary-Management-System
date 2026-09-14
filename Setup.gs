@@ -1,34 +1,28 @@
 /**
- * One-time setup. Edit the three values below, then in the Apps Script
- * editor choose setupInitialize and click Run. Authorize Sheets + Drive.
- *
- * The password is hashed immediately and never stored in HTML.
+ * Spreadsheet setup, sheet schemas, and shared row helpers.
+ * Edit the three values below only if you want to seed the first intern
+ * account from the Apps Script editor. Everyone else can create an
+ * account in the web app.
  */
 var SETUP_INTERN_EMAIL = 'your.email@example.com';
 var SETUP_INTERN_PASSWORD = 'ChangeThisPassword';
 var SETUP_INTERN_NAME = 'Your Full Name';
 
-var COMPANY_NAME = 'Kenya Shipyards Limited';
+var COMPANY_NAME = 'Daily Diary';
 var PROGRAMME_START_DATE = '2026-09-07';
 var APP_TIMEZONE = 'Africa/Nairobi';
+
 var DIARY_SHEET_NAME = 'Diary';
-var DIARY_HEADERS = ['id', 'date', 'weekday', 'timeIn', 'timeOut', 'assignment', 'hoursWorked', 'updatedAt', 'timeOutReason'];
 var TASKS_SHEET_NAME = 'Tasks';
 var SUBTASKS_SHEET_NAME = 'Subtasks';
-var TASKS_HEADERS = ['id', 'title', 'notes', 'createdAt', 'updatedAt'];
-var SUBTASKS_HEADERS = ['id', 'taskId', 'title', 'done', 'sortOrder', 'updatedAt'];
+var USERS_SHEET_NAME = 'Users';
+
+var DIARY_HEADERS = ['id', 'userId', 'date', 'weekday', 'timeIn', 'timeOut', 'assignment', 'hoursWorked', 'updatedAt', 'timeOutReason'];
+var TASKS_HEADERS = ['id', 'userId', 'title', 'notes', 'priority', 'dueDate', 'createdAt', 'updatedAt'];
+var SUBTASKS_HEADERS = ['id', 'userId', 'taskId', 'title', 'done', 'sortOrder', 'updatedAt'];
+var USERS_HEADERS = ['id', 'email', 'name', 'organisation', 'passwordHash', 'passwordSalt', 'programmeStart', 'createdAt'];
 
 function setupInitialize() {
-  if (!SETUP_INTERN_EMAIL || SETUP_INTERN_EMAIL.indexOf('@') < 1) {
-    throw new Error('Set SETUP_INTERN_EMAIL in Setup.gs before running setupInitialize.');
-  }
-  if (!SETUP_INTERN_PASSWORD || SETUP_INTERN_PASSWORD === 'ChangeThisPassword') {
-    throw new Error('Set a real SETUP_INTERN_PASSWORD in Setup.gs before running setupInitialize.');
-  }
-  if (!SETUP_INTERN_NAME || SETUP_INTERN_NAME === 'Your Full Name') {
-    throw new Error('Set SETUP_INTERN_NAME in Setup.gs before running setupInitialize.');
-  }
-
   var props = PropertiesService.getScriptProperties();
   var spreadsheetId = props.getProperty('SPREADSHEET_ID');
   var ss;
@@ -42,79 +36,311 @@ function setupInitialize() {
   }
 
   if (!ss) {
-    ss = SpreadsheetApp.create('Kenya Shipyards Limited — Internship Daily Diary');
+    ss = SpreadsheetApp.create('Daily Diary');
     spreadsheetId = ss.getId();
   }
 
   ss.setSpreadsheetTimeZone(APP_TIMEZONE);
-  ss.rename('Kenya Shipyards Limited — Internship Daily Diary');
-  ensureDiarySheet_(ss);
-  ensureTasksSheets_(ss);
-
-  var salt = generateSalt_();
-  var hash = hashPassword_(SETUP_INTERN_PASSWORD, salt);
+  ensureAllSheets_(ss);
 
   props.setProperties({
     SPREADSHEET_ID: spreadsheetId,
-    INTERN_EMAIL: String(SETUP_INTERN_EMAIL).trim().toLowerCase(),
-    INTERN_NAME: String(SETUP_INTERN_NAME).trim(),
-    PASSWORD_HASH: hash,
-    PASSWORD_SALT: salt,
-    COMPANY: COMPANY_NAME,
-    TIMEZONE: APP_TIMEZONE,
-    PROGRAMME_START: PROGRAMME_START_DATE
+    TIMEZONE: APP_TIMEZONE
   }, false);
+
+  seedSetupUserIfRequested_();
+  migrateLegacyIntern_();
 
   Logger.log('Setup complete.');
   Logger.log('Spreadsheet: ' + ss.getUrl());
-  Logger.log('Sign in with: ' + String(SETUP_INTERN_EMAIL).trim().toLowerCase());
-  Logger.log('Change SETUP_INTERN_PASSWORD back to a placeholder after this run.');
+  Logger.log('People can create accounts from the web app.');
 }
 
 /**
- * Run this later if you need a new password. Edit SETUP_INTERN_PASSWORD first.
+ * Run this later if you need a new password for the seeded intern.
+ * Edit SETUP_INTERN_PASSWORD first.
  */
 function setupChangePassword() {
   if (!SETUP_INTERN_PASSWORD || SETUP_INTERN_PASSWORD === 'ChangeThisPassword') {
     throw new Error('Set SETUP_INTERN_PASSWORD in Setup.gs before running setupChangePassword.');
   }
-  var props = PropertiesService.getScriptProperties();
-  if (!props.getProperty('PASSWORD_HASH')) {
-    throw new Error('Run setupInitialize first.');
+  if (!SETUP_INTERN_EMAIL || SETUP_INTERN_EMAIL.indexOf('@') < 1) {
+    throw new Error('Set SETUP_INTERN_EMAIL in Setup.gs before running setupChangePassword.');
+  }
+  var email = String(SETUP_INTERN_EMAIL).trim().toLowerCase();
+  var user = findUserByEmail_(email);
+  if (!user) {
+    throw new Error('No account found for that email. Create it in the web app or run setupInitialize.');
   }
   var salt = generateSalt_();
-  props.setProperty('PASSWORD_SALT', salt);
-  props.setProperty('PASSWORD_HASH', hashPassword_(SETUP_INTERN_PASSWORD, salt));
+  user.passwordSalt = salt;
+  user.passwordHash = hashPassword_(SETUP_INTERN_PASSWORD, salt);
+  writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
   Logger.log('Password updated. Change SETUP_INTERN_PASSWORD back to a placeholder.');
 }
 
-function ensureDiarySheet_(ss) {
-  var sheet = ss.getSheetByName(DIARY_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(DIARY_SHEET_NAME);
+function seedSetupUserIfRequested_() {
+  if (!SETUP_INTERN_EMAIL || SETUP_INTERN_EMAIL.indexOf('@') < 1) {
+    return;
   }
+  if (!SETUP_INTERN_PASSWORD || SETUP_INTERN_PASSWORD === 'ChangeThisPassword') {
+    return;
+  }
+  if (!SETUP_INTERN_NAME || SETUP_INTERN_NAME === 'Your Full Name') {
+    return;
+  }
+  var email = String(SETUP_INTERN_EMAIL).trim().toLowerCase();
+  if (findUserByEmail_(email)) {
+    return;
+  }
+  var salt = generateSalt_();
+  var now = nowNairobi_();
+  writeRecord_(getUsersSheet_(), USERS_HEADERS, 0, {
+    id: Utilities.getUuid(),
+    email: email,
+    name: String(SETUP_INTERN_NAME).trim(),
+    organisation: COMPANY_NAME,
+    passwordHash: hashPassword_(SETUP_INTERN_PASSWORD, salt),
+    passwordSalt: salt,
+    programmeStart: PROGRAMME_START_DATE,
+    createdAt: now
+  });
+  Logger.log('Seeded account: ' + email);
+}
+
+function migrateLegacyIntern_() {
+  var props = PropertiesService.getScriptProperties();
+  var email = String(props.getProperty('INTERN_EMAIL') || '').trim().toLowerCase();
+  var hash = props.getProperty('PASSWORD_HASH');
+  var salt = props.getProperty('PASSWORD_SALT');
+  if (!email || !hash || !salt) {
+    return;
+  }
+
+  var existing = findUserByEmail_(email);
+  var userId;
+  if (existing) {
+    userId = existing.id;
+  } else {
+    userId = Utilities.getUuid();
+    writeRecord_(getUsersSheet_(), USERS_HEADERS, 0, {
+      id: userId,
+      email: email,
+      name: String(props.getProperty('INTERN_NAME') || '').trim() || 'Intern',
+      organisation: props.getProperty('COMPANY') || 'Kenya Shipyards Limited',
+      passwordHash: hash,
+      passwordSalt: salt,
+      programmeStart: props.getProperty('PROGRAMME_START') || PROGRAMME_START_DATE,
+      createdAt: nowNairobi_()
+    });
+  }
+
+  backfillUserId_(getDiarySheet_(), DIARY_HEADERS, userId);
+  backfillUserId_(getTasksSheet_(), TASKS_HEADERS, userId);
+  backfillUserId_(getSubtasksSheet_(), SUBTASKS_HEADERS, userId);
+}
+
+function backfillUserId_(sheet, headers, userId) {
+  var userCol = headers.indexOf('userId') + 1;
+  if (userCol < 1) {
+    return;
+  }
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return;
+  }
+  var range = sheet.getRange(2, userCol, lastRow - 1, 1);
+  var values = range.getValues();
+  var changed = false;
+  for (var i = 0; i < values.length; i++) {
+    if (!String(values[i][0] || '').trim()) {
+      values[i][0] = userId;
+      changed = true;
+    }
+  }
+  if (changed) {
+    range.setNumberFormat('@');
+    range.setValues(values);
+  }
+}
+
+function headerList_(sheet) {
+  var lastCol = sheet.getLastColumn();
+  if (lastCol < 1) {
+    return [];
+  }
+  return sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (value) {
+    return String(value || '').trim();
+  });
+}
+
+function headersMatch_(current, expected) {
+  if (current.length < expected.length) {
+    return false;
+  }
+  for (var i = 0; i < expected.length; i++) {
+    if (current[i] !== expected[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function migrateSheetToHeaders_(sheet, expectedHeaders, defaults) {
+  defaults = defaults || {};
+  var current = headerList_(sheet);
+  if (headersMatch_(current, expectedHeaders)) {
+    return;
+  }
+  var lastRow = sheet.getLastRow();
+  var records = [];
+  if (lastRow >= 2 && current.length) {
+    var values = sheet.getRange(2, 1, lastRow - 1, current.length).getValues();
+    values.forEach(function (row) {
+      var rec = {};
+      current.forEach(function (header, index) {
+        if (header) {
+          rec[header] = row[index];
+        }
+      });
+      if (!cellAsText_(rec.id, 'yyyy-MM-dd')) {
+        return;
+      }
+      expectedHeaders.forEach(function (header) {
+        if (rec[header] == null || rec[header] === '') {
+          rec[header] = defaults[header] != null ? defaults[header] : '';
+        }
+      });
+      records.push(expectedHeaders.map(function (header) {
+        return rec[header];
+      }));
+    });
+  }
+
+  sheet.clear();
+  if (sheet.getMaxColumns() < expectedHeaders.length) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), expectedHeaders.length - sheet.getMaxColumns());
+  }
+  sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+  if (records.length) {
+    var body = sheet.getRange(2, 1, records.length, expectedHeaders.length);
+    body.setNumberFormat('@');
+    body.setValues(records);
+  }
+}
+
+function styleHeaderRow_(sheet, headers) {
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#072F1F')
+    .setFontColor('#FFFFFF')
+    .setNumberFormat('@');
+  sheet.setFrozenRows(1);
+}
+
+function styleDiarySheet_(sheet) {
+  migrateSheetToHeaders_(sheet, DIARY_HEADERS, {});
+  styleHeaderRow_(sheet, DIARY_HEADERS);
+  sheet.setColumnWidth(1, 80);
+  sheet.setColumnWidth(2, 80);
+  sheet.setColumnWidth(3, 120);
+  sheet.setColumnWidth(4, 120);
+  sheet.setColumnWidth(5, 90);
+  sheet.setColumnWidth(6, 90);
+  sheet.setColumnWidth(7, 360);
+  sheet.setColumnWidth(8, 110);
+  sheet.setColumnWidth(9, 160);
+  sheet.setColumnWidth(10, 220);
+  sheet.getRange('A:J').setNumberFormat('@');
+}
+
+function styleTasksSheet_(sheet) {
+  migrateSheetToHeaders_(sheet, TASKS_HEADERS, { priority: 'medium', dueDate: '' });
+  styleHeaderRow_(sheet, TASKS_HEADERS);
+  sheet.setColumnWidth(1, 80);
+  sheet.setColumnWidth(2, 80);
+  sheet.setColumnWidth(3, 280);
+  sheet.setColumnWidth(4, 320);
+  sheet.setColumnWidth(5, 100);
+  sheet.setColumnWidth(6, 120);
+  sheet.setColumnWidth(7, 160);
+  sheet.setColumnWidth(8, 160);
+  sheet.getRange('A:H').setNumberFormat('@');
+}
+
+function styleSubtasksSheet_(sheet) {
+  migrateSheetToHeaders_(sheet, SUBTASKS_HEADERS, {});
+  styleHeaderRow_(sheet, SUBTASKS_HEADERS);
+  sheet.setColumnWidth(1, 80);
+  sheet.setColumnWidth(2, 80);
+  sheet.setColumnWidth(3, 80);
+  sheet.setColumnWidth(4, 320);
+  sheet.setColumnWidth(5, 80);
+  sheet.setColumnWidth(6, 90);
+  sheet.setColumnWidth(7, 160);
+  sheet.getRange('A:G').setNumberFormat('@');
+}
+
+function styleUsersSheet_(sheet) {
+  migrateSheetToHeaders_(sheet, USERS_HEADERS, {});
+  styleHeaderRow_(sheet, USERS_HEADERS);
+  sheet.setColumnWidth(1, 80);
+  sheet.setColumnWidth(2, 220);
+  sheet.setColumnWidth(3, 200);
+  sheet.setColumnWidth(4, 220);
+  sheet.setColumnWidth(5, 280);
+  sheet.setColumnWidth(6, 160);
+  sheet.setColumnWidth(7, 130);
+  sheet.setColumnWidth(8, 160);
+  sheet.getRange('A:H').setNumberFormat('@');
+}
+
+function ensureNamedSheet_(ss, name) {
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+  }
+  return sheet;
+}
+
+function ensureDiarySheet_(ss) {
+  var sheet = ensureNamedSheet_(ss, DIARY_SHEET_NAME);
   var defaultSheet = ss.getSheetByName('Sheet1');
   if (defaultSheet && ss.getSheets().length > 1) {
     ss.deleteSheet(defaultSheet);
   }
-  sheet.getRange(1, 1, 1, DIARY_HEADERS.length).setValues([DIARY_HEADERS]);
-  sheet.getRange(1, 1, 1, DIARY_HEADERS.length)
-    .setFontWeight('bold')
-    .setBackground('#072F1F')
-    .setFontColor('#FFFFFF');
-  sheet.setFrozenRows(1);
-  sheet.setColumnWidth(1, 80);
-  sheet.setColumnWidth(2, 120);
-  sheet.setColumnWidth(3, 120);
-  sheet.setColumnWidth(4, 90);
-  sheet.setColumnWidth(5, 90);
-  sheet.setColumnWidth(6, 360);
-  sheet.setColumnWidth(7, 110);
-  sheet.setColumnWidth(8, 160);
-  sheet.setColumnWidth(9, 220);
-  sheet.getRange('A:I').setNumberFormat('@');
-  sheet.getRange(1, 1, 1, DIARY_HEADERS.length).setNumberFormat('@');
+  if (sheetNeedsMigrate_(sheet, DIARY_HEADERS)) {
+    styleDiarySheet_(sheet);
+  }
   return sheet;
+}
+
+function ensureTasksSheets_(ss) {
+  var tasks = ensureNamedSheet_(ss, TASKS_SHEET_NAME);
+  var subtasks = ensureNamedSheet_(ss, SUBTASKS_SHEET_NAME);
+  if (sheetNeedsMigrate_(tasks, TASKS_HEADERS)) {
+    styleTasksSheet_(tasks);
+  }
+  if (sheetNeedsMigrate_(subtasks, SUBTASKS_HEADERS)) {
+    styleSubtasksSheet_(subtasks);
+  }
+  return { tasks: tasks, subtasks: subtasks };
+}
+
+function ensureUsersSheet_(ss) {
+  var sheet = ensureNamedSheet_(ss, USERS_SHEET_NAME);
+  if (sheetNeedsMigrate_(sheet, USERS_HEADERS)) {
+    styleUsersSheet_(sheet);
+  }
+  return sheet;
+}
+
+function ensureAllSheets_(ss) {
+  ensureDiarySheet_(ss);
+  ensureTasksSheets_(ss);
+  ensureUsersSheet_(ss);
+  return ss;
 }
 
 function getScriptProp_(key, fallback) {
@@ -142,58 +368,19 @@ function getDiarySpreadsheet_() {
   return SpreadsheetApp.openById(id);
 }
 
+function sheetNeedsMigrate_(sheet, headers) {
+  return !headersMatch_(headerList_(sheet), headers);
+}
+
 function getDiarySheet_() {
   var ss = getDiarySpreadsheet_();
   var sheet = ss.getSheetByName(DIARY_SHEET_NAME);
   if (!sheet) {
     sheet = ensureDiarySheet_(ss);
+  } else if (sheetNeedsMigrate_(sheet, DIARY_HEADERS)) {
+    styleDiarySheet_(sheet);
   }
   return sheet;
-}
-
-function styleHeaderRow_(sheet, headers) {
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sheet.getRange(1, 1, 1, headers.length)
-    .setFontWeight('bold')
-    .setBackground('#072F1F')
-    .setFontColor('#FFFFFF')
-    .setNumberFormat('@');
-  sheet.setFrozenRows(1);
-}
-
-function styleTasksSheet_(sheet) {
-  styleHeaderRow_(sheet, TASKS_HEADERS);
-  sheet.setColumnWidth(1, 80);
-  sheet.setColumnWidth(2, 280);
-  sheet.setColumnWidth(3, 360);
-  sheet.setColumnWidth(4, 160);
-  sheet.setColumnWidth(5, 160);
-  sheet.getRange('A:E').setNumberFormat('@');
-}
-
-function styleSubtasksSheet_(sheet) {
-  styleHeaderRow_(sheet, SUBTASKS_HEADERS);
-  sheet.setColumnWidth(1, 80);
-  sheet.setColumnWidth(2, 80);
-  sheet.setColumnWidth(3, 320);
-  sheet.setColumnWidth(4, 80);
-  sheet.setColumnWidth(5, 90);
-  sheet.setColumnWidth(6, 160);
-  sheet.getRange('A:F').setNumberFormat('@');
-}
-
-function ensureTasksSheets_(ss) {
-  var tasks = ss.getSheetByName(TASKS_SHEET_NAME);
-  if (!tasks) {
-    tasks = ss.insertSheet(TASKS_SHEET_NAME);
-    styleTasksSheet_(tasks);
-  }
-  var subtasks = ss.getSheetByName(SUBTASKS_SHEET_NAME);
-  if (!subtasks) {
-    subtasks = ss.insertSheet(SUBTASKS_SHEET_NAME);
-    styleSubtasksSheet_(subtasks);
-  }
-  return { tasks: tasks, subtasks: subtasks };
 }
 
 function getTasksSheet_() {
@@ -201,6 +388,8 @@ function getTasksSheet_() {
   var sheet = ss.getSheetByName(TASKS_SHEET_NAME);
   if (!sheet) {
     sheet = ensureTasksSheets_(ss).tasks;
+  } else if (sheetNeedsMigrate_(sheet, TASKS_HEADERS)) {
+    styleTasksSheet_(sheet);
   }
   return sheet;
 }
@@ -210,6 +399,68 @@ function getSubtasksSheet_() {
   var sheet = ss.getSheetByName(SUBTASKS_SHEET_NAME);
   if (!sheet) {
     sheet = ensureTasksSheets_(ss).subtasks;
+  } else if (sheetNeedsMigrate_(sheet, SUBTASKS_HEADERS)) {
+    styleSubtasksSheet_(sheet);
   }
   return sheet;
+}
+
+function getUsersSheet_() {
+  var ss = getDiarySpreadsheet_();
+  var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ensureUsersSheet_(ss);
+  } else if (sheetNeedsMigrate_(sheet, USERS_HEADERS)) {
+    styleUsersSheet_(sheet);
+  }
+  return sheet;
+}
+
+function writeRow_(sheet, rowIndex, values) {
+  var range;
+  if (rowIndex) {
+    range = sheet.getRange(rowIndex, 1, 1, values.length);
+  } else {
+    sheet.appendRow(values);
+    range = sheet.getRange(sheet.getLastRow(), 1, 1, values.length);
+  }
+  range.setNumberFormat('@');
+  range.setValues([values]);
+}
+
+function writeRecord_(sheet, headers, rowIndex, rec) {
+  writeRow_(sheet, rowIndex, headers.map(function (header) {
+    return rec[header] == null ? '' : rec[header];
+  }));
+}
+
+function deleteSheetRow_(sheet, rowIndex) {
+  sheet.deleteRow(rowIndex);
+}
+
+function readRecords_(sheet, headers) {
+  var lastRow = sheet.getLastRow();
+  var rows = [];
+  if (lastRow < 2) {
+    return rows;
+  }
+  var values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+  for (var i = 0; i < values.length; i++) {
+    var rec = { _rowIndex: i + 2 };
+    headers.forEach(function (header, index) {
+      rec[header] = values[i][index];
+    });
+    rec.id = cellAsText_(rec.id, 'yyyy-MM-dd');
+    if (!rec.id) {
+      continue;
+    }
+    rows.push(rec);
+  }
+  return rows;
+}
+
+function recordsForUser_(rows, userId) {
+  return rows.filter(function (row) {
+    return cellAsText_(row.userId, 'yyyy-MM-dd') === String(userId || '');
+  });
 }
