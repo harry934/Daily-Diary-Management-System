@@ -265,7 +265,6 @@ function organisationOf_(profile) {
 function login_(email, password) {
   try {
     getUsersSheet_();
-    migrateLegacyIntern_();
   } catch (err) {
     return {
       ok: false,
@@ -322,7 +321,6 @@ function register_(payload) {
   payload = payload || {};
   try {
     getUsersSheet_();
-    migrateLegacyIntern_();
   } catch (err) {
     return {
       ok: false,
@@ -365,6 +363,7 @@ function register_(payload) {
       reportSpreadsheetId: ''
     };
     writeRecord_(getUsersSheet_(), USERS_HEADERS, 0, user);
+    clearEmailDeleted_(email);
     clearFailedLogin_(email);
     if (user.status === 'pending') {
       return {
@@ -394,7 +393,6 @@ function logout_(token) {
 
 function getSession_(token) {
   try {
-    ensureAdminAccount_();
     var profile = requireSession_(token);
     cache_().put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
     return { ok: true, profile: profile };

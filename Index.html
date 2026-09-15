@@ -12,10 +12,7 @@
 </head>
 <body>
   <div id="app-boot" class="boot-screen">
-    <div class="boot-card">
-      <span class="boot-icon" data-icon="book"></span>
-      <p>Loading Daily Diary…</p>
-    </div>
+    <div class="loader-ring" role="status" aria-label="Loading"></div>
   </div>
 
   <div id="view-login" class="login-wrapper d-none">
@@ -275,6 +272,20 @@
         </div>
 
         <div class="card day-card" id="day-card">
+          <div class="day-done d-none" id="day-done">
+            <div class="day-done-copy">
+              <span class="day-done-icon" data-icon="checkmark"></span>
+              <div>
+                <h2 class="day-done-title" id="day-done-title">Done for today</h2>
+                <p class="day-done-sub" id="day-done-sub">This space stays blank until tomorrow. You can still edit if something changes.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-custom btn-custom-light" id="btn-edit-day">
+              <span data-icon="pen"></span>
+              <span>Edit</span>
+            </button>
+          </div>
+          <div id="day-form">
           <div class="day-times">
             <div id="time-in-host"></div>
             <div class="day-hours-box">
@@ -309,6 +320,7 @@
               <span data-icon="arrow-right"></span>
             </button>
           </div>
+          </div>
         </div>
         </div>
       </section>
@@ -319,10 +331,6 @@
             <h1 class="page-title">Diary summary</h1>
             <p class="page-subtitle">Every logged day, assignment, and hour from Week 1 onward</p>
           </div>
-          <button type="button" class="btn-custom btn-custom-secondary" id="btn-send-week-summary">
-            <span data-icon="sheet"></span>
-            <span>Send records to my sheet</span>
-          </button>
         </div>
         <div class="row g-4 mb-4">
           <div class="col-md-3 col-6">
@@ -358,6 +366,24 @@
           <div>
             <h1 class="page-title">Tasks</h1>
             <p class="page-subtitle">Organise assigned work by priority and due date</p>
+          </div>
+        </div>
+        <div class="task-status-bar" id="task-status-bar">
+          <div class="task-status-main">
+            <div class="task-status-copy">
+              <span class="stat-label">Task progress</span>
+              <div class="task-status-percent" id="task-status-percent">0%</div>
+            </div>
+            <div class="task-status-track" id="task-status-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Task progress">
+              <div class="task-status-fill" id="task-status-fill"></div>
+            </div>
+          </div>
+          <div class="task-status-counts">
+            <span><strong id="task-status-total">0</strong> total</span>
+            <span><strong id="task-status-done">0</strong> done</span>
+            <span><strong id="task-status-open">0</strong> open</span>
+            <span><strong id="task-status-urgent">0</strong> urgent</span>
+            <span><strong id="task-status-overdue">0</strong> overdue</span>
           </div>
         </div>
         <div class="card task-composer">
@@ -429,13 +455,13 @@
     </div>
   </div>
 
-  <div id="task-alert-modal" class="alert-modal d-none" role="dialog" aria-modal="true" aria-labelledby="task-alert-title">
-    <div class="alert-modal-card">
+  <div id="task-alert-modal" class="alert-modal notify-dialog d-none" role="dialog" aria-modal="true" aria-labelledby="task-alert-title">
+    <div class="alert-modal-card notify-dialog-card">
       <div class="alert-modal-head">
-        <span data-icon="bell"></span>
+        <span class="notify-dialog-icon" data-icon="bell"></span>
         <div>
-          <h2 id="task-alert-title">Needs attention</h2>
-          <p>These tasks are urgent or due soon.</p>
+          <h2 id="task-alert-title">Tasks need attention</h2>
+          <p>Urgent or due soon. Review these before you continue.</p>
         </div>
       </div>
       <div id="task-alert-list" class="alert-modal-list"></div>

@@ -237,9 +237,26 @@ function deleteUser_(profile, userId) {
   if (user.role === 'admin' && countApprovedAdmins_() <= 1) {
     throw new Error('Keep at least one approved admin account.');
   }
-  deleteRecordsForUser_(getDiarySheet_(), DIARY_HEADERS, user.id);
-  deleteRecordsForUser_(getTasksSheet_(), TASKS_HEADERS, user.id);
-  deleteRecordsForUser_(getSubtasksSheet_(), SUBTASKS_HEADERS, user.id);
-  deleteSheetRow_(getUsersSheet_(), user._rowIndex);
+
+  var email = String(user.email || '').trim().toLowerCase();
+  var id = String(user.id || '');
+  function matchesUser(row) {
+    var rowId = cellAsText_(row.id, 'yyyy-MM-dd');
+    var rowEmail = cellAsText_(row.email, 'yyyy-MM-dd').toLowerCase();
+    return (id && rowId === id) || (email && rowEmail === email);
+  }
+
+  deleteRecordsForUser_(getDiarySheet_(), DIARY_HEADERS, id);
+  deleteRecordsForUser_(getTasksSheet_(), TASKS_HEADERS, id);
+  deleteRecordsForUser_(getSubtasksSheet_(), SUBTASKS_HEADERS, id);
+  deleteMatchingUserRows_(getUsersSheet_(), matchesUser);
+
+  try {
+    var legacy = getDiarySpreadsheet_().getSheetByName(USERS_SHEET_NAME);
+    deleteMatchingUserRows_(legacy, matchesUser);
+  } catch (err) {}
+
+  markEmailDeleted_(email);
+  SpreadsheetApp.flush();
   return listUsers_(profile);
 }

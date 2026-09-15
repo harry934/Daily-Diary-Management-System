@@ -22,7 +22,9 @@
     taskToday: '',
     editingTaskId: '',
     report: null,
-    adminUsers: []
+    adminUsers: [],
+    dayDone: false,
+    editingDay: false
   };
 
   var ICONS = {
@@ -109,7 +111,7 @@
     }
   }
 
-  function setPanelBusy(panelId, busy, message) {
+  function setPanelBusy(panelId, busy) {
     var panel = $(panelId);
     if (!panel) {
       return;
@@ -118,10 +120,9 @@
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'panel-busy d-none';
-      overlay.innerHTML = '<div class="panel-busy-card">' + iconSvg('spin') + '<span></span></div>';
+      overlay.innerHTML = '<div class="panel-busy-bar"></div>';
       panel.appendChild(overlay);
     }
-    overlay.querySelector('span').textContent = message || 'Loading…';
     overlay.classList.toggle('d-none', !busy);
   }
 
@@ -238,7 +239,7 @@
   }
 
   function writeDraftNow() {
-    if (applyingDay || !state.date) {
+    if (applyingDay || state.dayDone || !state.date) {
       return;
     }
     var payload = {
@@ -253,7 +254,7 @@
   }
 
   function scheduleDraft() {
-    if (applyingDay) {
+    if (applyingDay || state.dayDone) {
       return;
     }
     clearTimeout(draftTimer);
@@ -467,15 +468,65 @@
     return wrap;
   }
 
+  function toastTitle(type, message) {
+    if (type === 'error') {
+      return 'Couldn’t complete';
+    }
+    var text = String(message || '').toLowerCase();
+    if (text.indexOf('saved') >= 0) {
+      return 'Saved';
+    }
+    if (text.indexOf('connected') >= 0) {
+      return 'Connected';
+    }
+    if (text.indexOf('sent') >= 0) {
+      return 'Sent';
+    }
+    if (text.indexOf('deleted') >= 0) {
+      return 'Deleted';
+    }
+    if (text.indexOf('approved') >= 0 || text.indexOf('updated') >= 0) {
+      return 'Updated';
+    }
+    return 'Done';
+  }
+
   function showToast(message, type) {
+    type = type || 'success';
     var host = $('toast-host');
     var item = document.createElement('div');
-    item.className = 'toast-item ' + (type || 'success');
-    item.innerHTML = iconSvg(type === 'error' ? 'alert' : 'checkmark') + '<span></span>';
-    item.querySelector('span').textContent = message;
+    item.className = 'notify-item ' + type;
+    item.setAttribute('role', 'status');
+    var iconWrap = document.createElement('div');
+    iconWrap.className = 'notify-icon';
+    iconWrap.innerHTML = iconSvg(type === 'error' ? 'alert' : 'checkmark');
+    var body = document.createElement('div');
+    body.className = 'notify-body';
+    var title = document.createElement('strong');
+    title.textContent = toastTitle(type, message);
+    var detail = document.createElement('p');
+    detail.textContent = message;
+    body.appendChild(title);
+    body.appendChild(detail);
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'notify-close';
+    close.setAttribute('aria-label', 'Dismiss');
+    close.innerHTML = iconSvg('x');
+    close.addEventListener('click', function () {
+      item.remove();
+    });
+    item.appendChild(iconWrap);
+    item.appendChild(body);
+    item.appendChild(close);
     host.appendChild(item);
     setTimeout(function () {
-      item.remove();
+      if (item.parentNode) {
+        item.classList.add('is-leaving');
+        setTimeout(function () {
+          item.remove();
+        }, 220);
+      }
     }, 4200);
   }
 
@@ -588,19 +639,19 @@
     });
     closeSidebar();
     if (name === 'summary') {
-      setPanelBusy('panel-summary', true, 'Loading summary…');
+      setPanelBusy('panel-summary', true);
       loadSummary().then(function () {
         setPanelBusy('panel-summary', false);
       });
     }
     if (name === 'tasks') {
-      setPanelBusy('panel-tasks', true, 'Loading tasks…');
+      setPanelBusy('panel-tasks', true);
       loadTasks().then(function () {
         setPanelBusy('panel-tasks', false);
       });
     }
     if (name === 'admin') {
-      setPanelBusy('panel-admin', true, 'Loading accounts…');
+      setPanelBusy('panel-admin', true);
       loadAdminUsers().then(function () {
         setPanelBusy('panel-admin', false);
       });
@@ -672,15 +723,16 @@
     inHost.appendChild(state.timeIn);
     outHost.appendChild(state.timeOut);
 
-    applyFormValues(day.timeIn, day.timeOut, day.timeOutReason, day.assignment, isMorningTime(day.timeOut) || !!day.timeOutReason);
-
     var draft = options.skipDraft ? null : readDraft(day.date);
     var restored = false;
     if (shouldRestoreDraft(day, draft)) {
       applyFormValues(draft.timeIn, draft.timeOut, draft.timeOutReason, draft.assignment, draft.leftBeforeNoon);
       restored = true;
+    } else {
+      applyFormValues(day.timeIn, day.timeOut, day.timeOutReason, day.assignment, isMorningTime(day.timeOut) || !!day.timeOutReason);
     }
     $('draft-note').classList.toggle('d-none', !restored);
+    applyDayDoneView(day, { editing: !!options.editing, restored: restored });
 
     function onClockChange() {
       refreshHours();
@@ -697,12 +749,38 @@
     applyingDay = false;
   }
 
+  function applyDayDoneView(day, options) {
+    options = options || {};
+    var isToday = day.date === todayIsoLocal();
+    var showDone = !!(day.saved && !options.editing && !options.restored);
+    state.dayDone = showDone;
+    state.editingDay = !!options.editing;
+    $('day-done').classList.toggle('d-none', !showDone);
+    $('day-form').classList.toggle('d-none', showDone);
+    if (!showDone) {
+      return;
+    }
+    $('day-done-title').textContent = isToday ? 'Done for today' : 'This day is saved';
+    $('day-done-sub').textContent = isToday
+      ? 'This space stays blank until tomorrow. You can still edit if something changes.'
+      : 'The form stays blank. Open Edit to change this day’s record.';
+    applyFormValues('', '', '', '', false);
+    $('draft-note').classList.add('d-none');
+  }
+
+  function editSavedDay() {
+    if (!state.day || !state.day.saved) {
+      return;
+    }
+    renderDay(state.day, { skipDraft: true, editing: true });
+  }
+
   function loadDay(date, options) {
     options = options || {};
     if (state.date && !options.skipWrite) {
       writeDraftNow();
     }
-    setPanelBusy('panel-diary', true, 'Loading day…');
+    setPanelBusy('panel-diary', true);
     return api('getDay', { token: state.token, date: date || state.date }).then(function (result) {
       renderDay(result);
       return result;
@@ -749,7 +827,7 @@
     return api('saveEntry', { token: state.token, entry: entry }).then(function (result) {
       clearDraft(entry.date);
       renderDay(result.day, { skipDraft: true });
-      showToast(formatDisplayDate(entry.date) + ' saved.');
+      showToast(entry.date === todayIsoLocal() ? 'Done for today.' : formatDisplayDate(entry.date) + ' saved.');
       if (thenNext && result.day && result.day.date) {
         return loadDay(nextWeekday(result.day.date), { skipWrite: true });
       }
@@ -769,13 +847,11 @@
       $('report-owner-email').textContent = result.ownerEmail;
     }
     var connected = !!result.connected;
-    $('report-steps').classList.toggle('d-none', connected);
-    $('report-form').classList.toggle('d-none', connected);
-    if (connected) {
-      $('report-status').textContent = 'Connected to “' + (result.spreadsheetTitle || 'your sheet') +
-        '”. This sheet receives all weeks. Ask an admin if you need to connect a different one.';
-    } else {
+    $('report-card').classList.toggle('d-none', connected);
+    if (!connected) {
       $('report-status').textContent = 'Connect your own Google Sheet once. It will hold every week’s records.';
+      $('report-steps').classList.remove('d-none');
+      $('report-form').classList.remove('d-none');
     }
   }
 
@@ -798,7 +874,7 @@
       state.report = result;
       renderReportSetup(result);
       $('report-url').value = '';
-      showToast('Sheet connected.');
+      showToast('Connected to “' + (result.spreadsheetTitle || 'your sheet') + '”. This sheet receives all weeks.');
     }).catch(function (err) {
       showToast(err.message, 'error');
     }).then(function () {
@@ -1316,9 +1392,42 @@
     return card;
   }
 
+  function renderTaskStatusBar(tasks, today) {
+    tasks = tasks || [];
+    today = today || todayIsoLocal();
+    var total = tasks.length;
+    var done = 0;
+    var open = 0;
+    var urgent = 0;
+    var overdue = 0;
+    tasks.forEach(function (task) {
+      if (isTaskComplete(task)) {
+        done += 1;
+        return;
+      }
+      open += 1;
+      if (task.priority === 'urgent') {
+        urgent += 1;
+      }
+      if (dueBucket(task.dueDate, today) === 'overdue') {
+        overdue += 1;
+      }
+    });
+    var percent = total ? Math.round((done / total) * 100) : 0;
+    $('task-status-percent').textContent = percent + '%';
+    $('task-status-fill').style.width = percent + '%';
+    $('task-status-track').setAttribute('aria-valuenow', String(percent));
+    $('task-status-total').textContent = String(total);
+    $('task-status-done').textContent = String(done);
+    $('task-status-open').textContent = String(open);
+    $('task-status-urgent').textContent = String(urgent);
+    $('task-status-overdue').textContent = String(overdue);
+  }
+
   function renderTasks(result) {
     state.tasks = result.tasks || [];
     state.taskToday = result.today || todayIsoLocal();
+    renderTaskStatusBar(state.tasks, state.taskToday);
     var list = $('tasks-list');
     list.innerHTML = '';
     var today = state.taskToday;
@@ -1425,11 +1534,11 @@
     applyProfile(profile);
     showView('app');
     showPanel('diary');
-    return loadDay().then(function (result) {
-      loadReportSetup();
-      maybeShowTaskAlerts();
-      return result;
-    });
+    return Promise.all([
+      loadDay(),
+      loadReportSetup(),
+      maybeShowTaskAlerts()
+    ]);
   }
 
   function shiftDay(direction, button) {
@@ -1552,9 +1661,7 @@
     $('btn-send-week').addEventListener('click', function () {
       sendRecordsToSheet(this);
     });
-    $('btn-send-week-summary').addEventListener('click', function () {
-      sendRecordsToSheet(this);
-    });
+    $('btn-edit-day').addEventListener('click', editSavedDay);
     $('report-form').addEventListener('submit', function (event) {
       event.preventDefault();
       connectReportSheet($('btn-connect-sheet'));
@@ -1580,6 +1687,18 @@
     $('btn-alert-tasks').addEventListener('click', function () {
       hideTaskAlertModal();
       showPanel('tasks');
+    });
+    $('task-alert-modal').addEventListener('click', function (event) {
+      if (event.target === $('task-alert-modal')) {
+        hideTaskAlertModal();
+      }
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+      hideTaskAlertModal();
+      hideUserEditModal();
     });
     $('btn-user-edit-cancel').addEventListener('click', hideUserEditModal);
     $('user-edit-form').addEventListener('submit', function (event) {

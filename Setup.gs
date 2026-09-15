@@ -14,6 +14,7 @@ var APP_TIMEZONE = 'Africa/Nairobi';
 var ADMIN_SPREADSHEET_ID = '1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc';
 var ADMIN_EMAIL = '';
 var DAYS_IN_WEEK = 7;
+var SCHEMA_VERSION = '4';
 
 var DIARY_SHEET_NAME = 'Diary';
 var TASKS_SHEET_NAME = 'Tasks';
@@ -50,7 +51,8 @@ function setupInitialize() {
   props.setProperties({
     SPREADSHEET_ID: spreadsheetId,
     TIMEZONE: APP_TIMEZONE,
-    ADMIN_SPREADSHEET_ID: ADMIN_SPREADSHEET_ID
+    ADMIN_SPREADSHEET_ID: ADMIN_SPREADSHEET_ID,
+    SCHEMA_VERSION: SCHEMA_VERSION
   }, false);
 
   migrateUsersFromDiarySpreadsheet_(ss);
@@ -97,7 +99,7 @@ function seedSetupUserIfRequested_() {
     return;
   }
   var email = String(SETUP_INTERN_EMAIL).trim().toLowerCase();
-  if (findUserByEmail_(email)) {
+  if (findUserByEmail_(email) || isEmailDeleted_(email)) {
     return;
   }
   var salt = generateSalt_();
@@ -129,6 +131,9 @@ function migrateLegacyIntern_() {
 
   var existing = findUserByEmail_(email);
   var userId;
+  if (isEmailDeleted_(email)) {
+    return;
+  }
   if (existing) {
     userId = existing.id;
   } else {
@@ -397,6 +402,60 @@ function getAdminSpreadsheet_() {
   }
 }
 
+function isEmailDeleted_(email) {
+  var wanted = String(email || '').trim().toLowerCase();
+  if (!wanted) {
+    return false;
+  }
+  var raw = getScriptProp_('DELETED_EMAILS', '');
+  return ('\n' + raw + '\n').indexOf('\n' + wanted + '\n') >= 0;
+}
+
+function markEmailDeleted_(email) {
+  var wanted = String(email || '').trim().toLowerCase();
+  if (!wanted || isEmailDeleted_(wanted)) {
+    return;
+  }
+  var raw = getScriptProp_('DELETED_EMAILS', '');
+  var next = raw ? raw + '\n' + wanted : wanted;
+  PropertiesService.getScriptProperties().setProperty('DELETED_EMAILS', next);
+}
+
+function clearEmailDeleted_(email) {
+  var wanted = String(email || '').trim().toLowerCase();
+  if (!wanted) {
+    return;
+  }
+  var raw = getScriptProp_('DELETED_EMAILS', '');
+  var kept = raw.split('\n').filter(function (item) {
+    return item && item !== wanted;
+  });
+  PropertiesService.getScriptProperties().setProperty('DELETED_EMAILS', kept.join('\n'));
+}
+
+function clearLegacyUsersSheet_(sheet) {
+  if (!sheet) {
+    return;
+  }
+  var last = sheet.getLastRow();
+  if (last >= 2) {
+    sheet.deleteRows(2, last - 1);
+  }
+}
+
+function deleteMatchingUserRows_(sheet, match) {
+  if (!sheet) {
+    return;
+  }
+  var rows = readRecords_(sheet, USERS_HEADERS).filter(match);
+  rows.sort(function (a, b) {
+    return b._rowIndex - a._rowIndex;
+  });
+  rows.forEach(function (row) {
+    deleteSheetRow_(sheet, row._rowIndex);
+  });
+}
+
 function migrateUsersFromDiarySpreadsheet_(ss) {
   if (!ss) {
     return;
@@ -407,15 +466,16 @@ function migrateUsersFromDiarySpreadsheet_(ss) {
   }
   var dest = getUsersSheet_();
   var existing = readRecords_(dest, USERS_HEADERS);
+  if (existing.length) {
+    clearLegacyUsersSheet_(old);
+    return;
+  }
   var emails = {};
-  existing.forEach(function (row) {
-    emails[cellAsText_(row.email, 'yyyy-MM-dd').toLowerCase()] = true;
-  });
   var oldHeaders = headerList_(old);
   var oldRecords = readRecords_(old, oldHeaders.length ? oldHeaders : USERS_HEADERS);
   oldRecords.forEach(function (rec) {
     var email = cellAsText_(rec.email, 'yyyy-MM-dd').toLowerCase();
-    if (!email || emails[email]) {
+    if (!email || emails[email] || isEmailDeleted_(email)) {
       return;
     }
     writeRecord_(dest, USERS_HEADERS, 0, {
@@ -433,6 +493,7 @@ function migrateUsersFromDiarySpreadsheet_(ss) {
     });
     emails[email] = true;
   });
+  clearLegacyUsersSheet_(old);
 }
 
 function promoteAdminUsers_() {
@@ -591,7 +652,11 @@ function writeRecord_(sheet, headers, rowIndex, rec) {
 }
 
 function deleteSheetRow_(sheet, rowIndex) {
-  sheet.deleteRow(rowIndex);
+  var index = Number(rowIndex);
+  if (!sheet || !index || index < 2) {
+    return;
+  }
+  sheet.deleteRow(index);
 }
 
 function readRecords_(sheet, headers) {

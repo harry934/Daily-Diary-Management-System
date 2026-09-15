@@ -3,7 +3,6 @@
  */
 
 function doGet() {
-  migrateSchema_();
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('Daily Diary')
@@ -24,9 +23,17 @@ function migrateSchema_() {
     migrateUsersFromDiarySpreadsheet_(ss);
     migrateLegacyIntern_();
     ensureAdminAccount_();
+    PropertiesService.getScriptProperties().setProperty('SCHEMA_VERSION', SCHEMA_VERSION);
   } catch (err) {
     // Spreadsheet may not exist yet; setupInitialize will create it.
   }
+}
+
+function migrateSchemaIfNeeded_() {
+  if (getScriptProp_('SCHEMA_VERSION', '') === SCHEMA_VERSION) {
+    return;
+  }
+  migrateSchema_();
 }
 
 /**
@@ -36,6 +43,7 @@ function migrateSchema_() {
 function api(action, payload) {
   payload = payload || {};
   try {
+    migrateSchemaIfNeeded_();
     var profile;
     switch (String(action || '')) {
       case 'login':
