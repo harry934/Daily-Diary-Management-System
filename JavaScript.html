@@ -1351,7 +1351,7 @@
       api('saveTask', {
         token: state.token,
         task: {
-          id: $('task-id').value || undefined,
+          id: $('task-id').value,
           title: $('task-title').value,
           notes: $('task-notes').value,
           priority: $('task-priority').value,
