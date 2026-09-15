@@ -23,7 +23,7 @@ function migrateSchema_() {
     ensureAdminUsersSheet_();
     migrateUsersFromDiarySpreadsheet_(ss);
     migrateLegacyIntern_();
-    promoteAdminUsers_();
+    ensureAdminAccount_();
   } catch (err) {
     // Spreadsheet may not exist yet; setupInitialize will create it.
   }

@@ -56,7 +56,7 @@ function setupInitialize() {
   migrateUsersFromDiarySpreadsheet_(ss);
   seedSetupUserIfRequested_();
   migrateLegacyIntern_();
-  promoteAdminUsers_();
+  ensureAdminAccount_();
 
   Logger.log('Setup complete.');
   Logger.log('Spreadsheet: ' + ss.getUrl());
@@ -446,18 +446,57 @@ function promoteAdminUsers_() {
     if (email !== admin) {
       return;
     }
-    row.email = email;
-    row.name = cellAsText_(row.name, 'yyyy-MM-dd');
-    row.organisation = cellAsText_(row.organisation, 'yyyy-MM-dd');
-    row.passwordHash = String(row.passwordHash || '');
-    row.passwordSalt = String(row.passwordSalt || '');
-    row.programmeStart = cellAsText_(row.programmeStart, 'yyyy-MM-dd');
-    row.createdAt = cellAsText_(row.createdAt, 'yyyy-MM-dd HH:mm:ss');
-    row.role = 'admin';
-    row.status = 'approved';
-    row.reportSpreadsheetId = cellAsText_(row.reportSpreadsheetId, 'yyyy-MM-dd');
-    writeRecord_(sheet, USERS_HEADERS, row._rowIndex, row);
+    var user = hydrateUser_(row);
+    user.role = 'admin';
+    user.status = 'approved';
+    writeRecord_(sheet, USERS_HEADERS, user._rowIndex, user);
   });
+}
+
+function ensureAdminAccount_() {
+  promoteAdminUsers_();
+  var sheet = getUsersSheet_();
+  var rows = readRecords_(sheet, USERS_HEADERS);
+  if (!rows.length) {
+    return;
+  }
+  var owner = ownerEmail_();
+  var ownerRow = null;
+  var oldestApproved = null;
+  var hasApprovedAdmin = false;
+  rows.forEach(function (row) {
+    var user = hydrateUser_(row);
+    if (user.role === 'admin' && user.status === 'approved') {
+      hasApprovedAdmin = true;
+    }
+    if (owner && user.email === owner) {
+      ownerRow = user;
+    }
+    if (user.status === 'approved') {
+      if (!oldestApproved || String(user.createdAt).localeCompare(String(oldestApproved.createdAt)) < 0) {
+        oldestApproved = user;
+      }
+    }
+  });
+  if (hasApprovedAdmin) {
+    return;
+  }
+  var pick = ownerRow || oldestApproved;
+  if (!pick) {
+    pick = hydrateUser_(rows[0]);
+    rows.forEach(function (row) {
+      var user = hydrateUser_(row);
+      if (String(user.createdAt).localeCompare(String(pick.createdAt)) < 0) {
+        pick = user;
+      }
+    });
+  }
+  if (!pick) {
+    return;
+  }
+  pick.role = 'admin';
+  pick.status = 'approved';
+  writeRecord_(sheet, USERS_HEADERS, pick._rowIndex, pick);
 }
 
 function ensureAllSheets_(ss) {

@@ -73,7 +73,8 @@ Use [INVITE.md](INVITE.md) when you invite someone. Put the `/exec` URL at the t
 - Open **Summary** for every logged day plus task counts
 - Open **Tasks** to add, edit, tag priority, and set due dates
 - After sign-in, a popup lists urgent or due-soon tasks
-- Admins open **User management** to approve, edit, or delete accounts, and to disconnect a report sheet
+- Admins open **User management** to approve, edit, or delete accounts, and to disconnect a report sheet (spreadsheet IDs are not shown)
+- If no admin exists, the script-owner email is promoted, otherwise the oldest approved account
 
 Each account only sees its own diary and tasks. Sessions last up to 6 hours.
 

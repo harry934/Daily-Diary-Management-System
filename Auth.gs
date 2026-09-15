@@ -302,6 +302,8 @@ function login_(email, password) {
   }
 
   clearFailedLogin_(normalized);
+  ensureAdminAccount_();
+  user = findUserById_(user.id) || user;
   if (user.status === 'pending') {
     return { ok: false, error: 'Your account is waiting for admin approval. You can sign in after it is approved.' };
   }
@@ -392,6 +394,7 @@ function logout_(token) {
 
 function getSession_(token) {
   try {
+    ensureAdminAccount_();
     var profile = requireSession_(token);
     cache_().put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
     return { ok: true, profile: profile };

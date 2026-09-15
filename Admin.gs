@@ -22,7 +22,7 @@ function listUsers_(profile) {
       createdAt: user.createdAt,
       role: user.role,
       status: user.status,
-      reportSpreadsheetId: user.reportSpreadsheetId
+      hasReportSheet: !!user.reportSpreadsheetId
     };
   });
   var rank = { pending: 0, approved: 1, disabled: 2 };
