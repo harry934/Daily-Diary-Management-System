@@ -10,6 +10,8 @@ var MAX_SIGNUP_ATTEMPTS = 8;
 var NAME_MAX_LENGTH = 80;
 var ORG_MAX_LENGTH = 80;
 var PASSWORD_MIN_LENGTH = 8;
+var USERNAME_MIN_LENGTH = 3;
+var USERNAME_MAX_LENGTH = 24;
 
 function generateSalt_() {
   return Utilities.getUuid().replace(/-/g, '');
@@ -61,15 +63,38 @@ function sanitizeOrganisation_(value) {
   return text;
 }
 
+function sanitizeUsername_(value) {
+  var text = String(value || '').trim().toLowerCase();
+  if (!text) {
+    throw new Error('Enter a username.');
+  }
+  if (text.length < USERNAME_MIN_LENGTH || text.length > USERNAME_MAX_LENGTH) {
+    throw new Error('Username must be ' + USERNAME_MIN_LENGTH + '–' + USERNAME_MAX_LENGTH + ' characters.');
+  }
+  if (!/^[a-z][a-z0-9._]*$/.test(text)) {
+    throw new Error('Username must start with a letter and use only letters, numbers, dots, or underscores.');
+  }
+  return text;
+}
+
 function sanitizeEmail_(value) {
   var email = String(value || '').trim().toLowerCase();
-  if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 3) {
-    throw new Error('Enter a valid email address.');
+  if (!email) {
+    return '';
+  }
+  if (email.indexOf('@') < 1 || email.indexOf('.') < 3) {
+    throw new Error('Enter a valid email address, or leave it blank.');
   }
   if (email.length > 120) {
     throw new Error('Email must be 120 characters or fewer.');
   }
   return email;
+}
+
+function assertPasswordsMatch_(password, confirm) {
+  if (password !== String(confirm || '')) {
+    throw new Error('Password and confirmation do not match.');
+  }
 }
 
 function sanitizePassword_(value) {
@@ -109,6 +134,7 @@ function hydrateUser_(row) {
     status = 'approved';
   }
   row.email = email;
+  row.username = cellAsText_(row.username, 'yyyy-MM-dd').toLowerCase();
   row.name = cellAsText_(row.name, 'yyyy-MM-dd');
   row.organisation = cellAsText_(row.organisation, 'yyyy-MM-dd');
   row.passwordHash = String(row.passwordHash || '');
@@ -124,7 +150,8 @@ function hydrateUser_(row) {
 function profileFromUser_(user) {
   return {
     userId: user.id,
-    email: user.email,
+    username: user.username || '',
+    email: user.email || '',
     name: user.name,
     organisation: user.organisation,
     company: user.organisation,
@@ -134,6 +161,20 @@ function profileFromUser_(user) {
     status: user.status || 'approved',
     reportSpreadsheetId: user.reportSpreadsheetId || ''
   };
+}
+
+function findUserByUsername_(username) {
+  var normalized = String(username || '').trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+  var rows = readRecords_(getUsersSheet_(), USERS_HEADERS);
+  for (var i = 0; i < rows.length; i++) {
+    if (cellAsText_(rows[i].username, 'yyyy-MM-dd').toLowerCase() === normalized) {
+      return hydrateUser_(rows[i]);
+    }
+  }
+  return null;
 }
 
 function findUserByEmail_(email) {
@@ -148,6 +189,17 @@ function findUserByEmail_(email) {
     }
   }
   return null;
+}
+
+function findUserByLoginIdentifier_(identifier) {
+  var text = String(identifier || '').trim().toLowerCase();
+  if (!text) {
+    return null;
+  }
+  if (text.indexOf('@') >= 0) {
+    return findUserByEmail_(text);
+  }
+  return findUserByUsername_(text);
 }
 
 function findUserById_(id) {
@@ -262,7 +314,7 @@ function organisationOf_(profile) {
   return (profile && (profile.organisation || profile.company)) || getCompany_();
 }
 
-function login_(email, password) {
+function login_(identifier, password) {
   try {
     getUsersSheet_();
   } catch (err) {
@@ -272,14 +324,12 @@ function login_(email, password) {
     };
   }
 
-  var normalized;
-  try {
-    normalized = sanitizeEmail_(email);
-  } catch (err) {
-    return { ok: false, error: err.message };
+  var normalized = String(identifier || '').trim().toLowerCase();
+  if (!normalized) {
+    return { ok: false, error: 'Enter your username and password.' };
   }
   if (!password) {
-    return { ok: false, error: 'Enter your email and password.' };
+    return { ok: false, error: 'Enter your username and password.' };
   }
 
   try {
@@ -288,16 +338,16 @@ function login_(email, password) {
     return { ok: false, error: err.message };
   }
 
-  var user = findUserByEmail_(normalized);
+  var user = findUserByLoginIdentifier_(normalized);
   if (!user || !user.passwordHash || !user.passwordSalt) {
     recordFailedLogin_(normalized);
-    return { ok: false, error: 'Invalid email or password.' };
+    return { ok: false, error: 'Invalid username or password.' };
   }
 
   var actualHash = hashPassword_(password, user.passwordSalt);
   if (!hashesMatch_(actualHash, user.passwordHash)) {
     recordFailedLogin_(normalized);
-    return { ok: false, error: 'Invalid email or password.' };
+    return { ok: false, error: 'Invalid username or password.' };
   }
 
   clearFailedLogin_(normalized);
@@ -328,29 +378,41 @@ function register_(payload) {
     };
   }
 
-  var email;
+  var username = '';
+  var email = '';
   try {
+    username = sanitizeUsername_(payload.username);
     email = sanitizeEmail_(payload.email);
-    assertNotRateLimited_(email);
+    assertNotRateLimited_(username);
   } catch (err) {
     return { ok: false, error: err.message };
   }
 
   try {
-    var name = sanitizePersonName_(payload.name, 'full name');
-    var organisation = sanitizeOrganisation_(payload.organisation);
-    var password = sanitizePassword_(payload.password);
-    var programmeStart = sanitizeProgrammeStart_(payload.programmeStart);
-
-    if (findUserByEmail_(email)) {
-      recordFailedSignup_(email);
+    if (isUsernameDeleted_(username)) {
+      recordFailedSignup_(username);
+      return { ok: false, error: 'That username is not available. Choose another.' };
+    }
+    if (findUserByUsername_(username)) {
+      recordFailedSignup_(username);
+      return { ok: false, error: 'That username is already taken. Choose another.' };
+    }
+    if (email && findUserByEmail_(email)) {
+      recordFailedSignup_(username);
       return { ok: false, error: 'An account with that email already exists. Sign in instead.' };
     }
 
+    var name = sanitizePersonName_(payload.name, 'full name');
+    var organisation = sanitizeOrganisation_(payload.organisation);
+    var password = sanitizePassword_(payload.password);
+    assertPasswordsMatch_(password, payload.passwordConfirm);
+    var programmeStart = sanitizeProgrammeStart_(payload.programmeStart);
+
     var salt = generateSalt_();
-    var isAdmin = isAdminEmail_(email);
+    var isAdmin = !!(email && isAdminEmail_(email));
     var user = {
       id: Utilities.getUuid(),
+      username: username,
       email: email,
       name: name,
       organisation: organisation,
@@ -363,8 +425,11 @@ function register_(payload) {
       reportSpreadsheetId: ''
     };
     writeRecord_(getUsersSheet_(), USERS_HEADERS, 0, user);
-    clearEmailDeleted_(email);
-    clearFailedLogin_(email);
+    clearUsernameDeleted_(username);
+    if (email) {
+      clearEmailDeleted_(email);
+    }
+    clearFailedLogin_(username);
     if (user.status === 'pending') {
       return {
         ok: true,
@@ -379,9 +444,43 @@ function register_(payload) {
       profile: profile
     };
   } catch (err) {
-    recordFailedSignup_(email);
+    if (username) {
+      recordFailedSignup_(username);
+    }
     return { ok: false, error: String(err && err.message ? err.message : err) };
   }
+}
+
+function changePassword_(profile, payload) {
+  payload = payload || {};
+  var user = findUserById_(profile.userId);
+  if (!user) {
+    throw new Error('Account not found.');
+  }
+  var rateKey = user.username || user.email || user.id;
+  assertNotRateLimited_(rateKey);
+
+  if (!payload.currentPassword) {
+    throw new Error('Enter your current password.');
+  }
+  var currentHash = hashPassword_(payload.currentPassword, user.passwordSalt);
+  if (!hashesMatch_(currentHash, user.passwordHash)) {
+    recordFailedLogin_(rateKey);
+    throw new Error('Current password is incorrect.');
+  }
+
+  var nextPassword = sanitizePassword_(payload.newPassword);
+  assertPasswordsMatch_(nextPassword, payload.newPasswordConfirm);
+  if (nextPassword === String(payload.currentPassword || '')) {
+    throw new Error('Choose a new password that is different from your current one.');
+  }
+
+  var salt = generateSalt_();
+  user.passwordSalt = salt;
+  user.passwordHash = hashPassword_(nextPassword, salt);
+  writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
+  clearFailedLogin_(rateKey);
+  return { ok: true, message: 'Password updated.' };
 }
 
 function logout_(token) {

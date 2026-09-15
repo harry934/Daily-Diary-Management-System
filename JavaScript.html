@@ -1,6 +1,7 @@
 <script>
 (function () {
   var TOKEN_KEY = 'dailyDiaryToken';
+  var USERNAME_KEY = 'dailyDiaryUsername';
   var EMAIL_KEY = 'dailyDiaryEmail';
   var DRAFT_PREFIX = 'dailyDiaryDraft:';
   var MINUTES = ['00', '15', '30', '45'];
@@ -604,6 +605,7 @@
   function applyProfile(profile) {
     state.profile = profile;
     var name = profile.name || 'Intern';
+    var username = profile.username || '';
     var email = profile.email || '';
     var org = organisationName(profile);
     var mark = initials(name);
@@ -611,13 +613,15 @@
     $('navbar-kicker').textContent = org;
     $('footer-org').textContent = org;
     $('sidebar-name').textContent = name;
-    $('sidebar-email').textContent = email;
+    $('sidebar-username').textContent = username ? '@' + username : '';
     $('sidebar-initials').textContent = mark;
     $('nav-name').textContent = name;
     $('nav-initials').textContent = mark;
     $('profile-welcome').textContent = 'Welcome, ' + name;
     $('profile-org').textContent = org;
+    $('profile-username').textContent = username ? '@' + username : '';
     $('profile-email').textContent = email;
+    $('profile-email').classList.toggle('d-none', !email);
     $('nav-admin-item').classList.toggle('d-none', String(profile.role || '').toLowerCase() !== 'admin');
   }
 
@@ -923,17 +927,18 @@
       state.adminUsers = result.users || [];
       if (!state.adminUsers.length) {
         var empty = document.createElement('tr');
-        empty.innerHTML = '<td colspan="5">No accounts yet.</td>';
+        empty.innerHTML = '<td colspan="6">No accounts yet.</td>';
         body.appendChild(empty);
         return;
       }
       state.adminUsers.forEach(function (user) {
         var tr = document.createElement('tr');
-        tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td>';
+        tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td>';
         tr.cells[0].textContent = user.name;
-        tr.cells[1].textContent = user.email;
-        tr.cells[2].textContent = user.organisation;
-        tr.cells[3].textContent = user.role === 'admin' ? 'admin · ' + user.status : user.status;
+        tr.cells[1].textContent = user.username ? '@' + user.username : '—';
+        tr.cells[2].textContent = user.email || '—';
+        tr.cells[3].textContent = user.organisation;
+        tr.cells[4].textContent = user.role === 'admin' ? 'admin · ' + user.status : user.status;
         var actions = document.createElement('div');
         actions.className = 'admin-actions';
         if (user.status !== 'approved') {
@@ -954,7 +959,7 @@
             deleteUserAccount(user, button);
           }));
         }
-        tr.cells[4].appendChild(actions);
+        tr.cells[5].appendChild(actions);
         body.appendChild(tr);
       });
     }).catch(function (err) {
@@ -977,6 +982,7 @@
   function openUserEditModal(user) {
     $('edit-user-id').value = user.id;
     $('edit-user-name').value = user.name || '';
+    $('edit-user-username').value = user.username || '';
     $('edit-user-email').value = user.email || '';
     $('edit-user-org').value = user.organisation || '';
     $('edit-user-start').value = user.programmeStart || '';
@@ -990,6 +996,42 @@
     $('user-edit-modal').classList.add('d-none');
   }
 
+  function openPasswordModal() {
+    $('password-current').value = '';
+    $('password-new').value = '';
+    $('password-confirm').value = '';
+    $('password-modal').classList.remove('d-none');
+    fillIcons($('password-modal'));
+  }
+
+  function hidePasswordModal() {
+    $('password-modal').classList.add('d-none');
+  }
+
+  function savePasswordChange(button) {
+    var currentPassword = $('password-current').value;
+    var newPassword = $('password-new').value;
+    var confirmPassword = $('password-confirm').value;
+    if (newPassword !== confirmPassword) {
+      showToast('New password and confirmation do not match.', 'error');
+      return Promise.resolve();
+    }
+    setButtonBusy(button, true, 'Saving…');
+    return api('changePassword', {
+      token: state.token,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      newPasswordConfirm: confirmPassword
+    }).then(function (result) {
+      hidePasswordModal();
+      showToast(result.message || 'Password updated.');
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
   function saveUserEdit(button) {
     setButtonBusy(button, true, 'Saving…');
     return api('updateUser', {
@@ -997,6 +1039,7 @@
       user: {
         userId: $('edit-user-id').value,
         name: $('edit-user-name').value,
+        username: $('edit-user-username').value,
         email: $('edit-user-email').value,
         organisation: $('edit-user-org').value,
         programmeStart: $('edit-user-start').value,
@@ -1555,17 +1598,20 @@
   function bindChrome() {
     bindPasswordToggle('toggle-password', 'login-password');
     bindPasswordToggle('toggle-register-password', 'register-password');
+    bindPasswordToggle('toggle-register-password-confirm', 'register-password-confirm');
     $('login-form').addEventListener('submit', function (event) {
       event.preventDefault();
       setLoginError('');
-      var email = $('login-email').value.trim();
+      var username = $('login-username').value.trim();
       var password = $('login-password').value;
       var button = $('btn-login');
       setButtonBusy(button, true, 'Signing in…');
-      api('login', { email: email, password: password }).then(function (result) {
+      api('login', { username: username, password: password }).then(function (result) {
         if ($('remember-me').checked) {
-          localStorage.setItem(EMAIL_KEY, email);
+          localStorage.setItem(USERNAME_KEY, username);
+          localStorage.removeItem(EMAIL_KEY);
         } else {
+          localStorage.removeItem(USERNAME_KEY);
           localStorage.removeItem(EMAIL_KEY);
         }
         return enterApp(result.token, result.profile);
@@ -1583,17 +1629,27 @@
     $('register-form').addEventListener('submit', function (event) {
       event.preventDefault();
       setRegisterError('');
+      var password = $('register-password').value;
+      var confirmPassword = $('register-password-confirm').value;
+      if (password !== confirmPassword) {
+        setRegisterError('Password and confirmation do not match.');
+        return;
+      }
       var button = $('btn-register');
+      var username = $('register-username').value.trim().toLowerCase();
       setButtonBusy(button, true, 'Creating account…');
       api('register', {
         name: $('register-name').value,
+        username: username,
         organisation: $('register-org').value,
         email: $('register-email').value,
-        password: $('register-password').value,
+        password: password,
+        passwordConfirm: confirmPassword,
         programmeStart: $('register-start').value
       }).then(function (result) {
-        localStorage.setItem(EMAIL_KEY, $('register-email').value.trim().toLowerCase());
-        $('login-email').value = $('register-email').value.trim();
+        localStorage.setItem(USERNAME_KEY, username);
+        localStorage.removeItem(EMAIL_KEY);
+        $('login-username').value = username;
         $('remember-me').checked = true;
         if (result.pending) {
           setRegisterError('');
@@ -1669,6 +1725,17 @@
     $('btn-logout').addEventListener('click', function () {
       api('logout', { token: state.token }).catch(function () { return null; }).then(expireSession);
     });
+    $('btn-change-password').addEventListener('click', openPasswordModal);
+    $('btn-password-cancel').addEventListener('click', hidePasswordModal);
+    $('password-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      savePasswordChange($('btn-password-save'));
+    });
+    $('password-modal').addEventListener('click', function (event) {
+      if (event.target === $('password-modal')) {
+        hidePasswordModal();
+      }
+    });
 
     $('task-filters').addEventListener('click', function (event) {
       var chip = event.target.closest('[data-filter]');
@@ -1699,6 +1766,7 @@
       }
       hideTaskAlertModal();
       hideUserEditModal();
+      hidePasswordModal();
     });
     $('btn-user-edit-cancel').addEventListener('click', hideUserEditModal);
     $('user-edit-form').addEventListener('submit', function (event) {
@@ -1736,11 +1804,12 @@
     bindChrome();
     fillIcons();
     showAuthMode('login');
-    var remembered = localStorage.getItem(EMAIL_KEY) ||
+    var remembered = localStorage.getItem(USERNAME_KEY) ||
+      localStorage.getItem(EMAIL_KEY) ||
       localStorage.getItem('kenyaDiaryEmail') ||
       localStorage.getItem('leyaDiaryEmail');
     if (remembered) {
-      $('login-email').value = remembered;
+      $('login-username').value = remembered;
       $('remember-me').checked = true;
     }
     if (!$('register-start').value) {

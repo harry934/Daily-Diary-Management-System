@@ -1,6 +1,6 @@
 # Daily Diary
 
-Web-based internship diary. People create an account with an organisation name; an **admin approves** them before they can sign in. They record **any working day**, track tasks, and send **all weeks** to **one Google Sheet** they connect once.
+Web-based internship diary. People create an account with a **username** (email optional) and an organisation name; an **admin approves** them before they can sign in. They record **any working day**, track tasks, and send **all weeks** to **one Google Sheet** they connect once.
 
 | Layer | Stack |
 | --- | --- |
@@ -17,7 +17,7 @@ Admin users spreadsheet ID: `1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc`
 
 ## 1. One-time setup
 
-Open [Setup.gs](Setup.gs). Set `ADMIN_EMAIL` to the email you will use to sign in as admin (or set `SETUP_INTERN_EMAIL` / `SETUP_INTERN_PASSWORD` / `SETUP_INTERN_NAME` to seed that admin account). Leave intern placeholders if you will only register in the web app — then the Google account that owns the script is treated as admin when that same email registers.
+Open [Setup.gs](Setup.gs). Set `ADMIN_EMAIL` to the Gmail that should auto-become admin if that address is entered on signup (optional), or set `SETUP_INTERN_EMAIL` / `SETUP_INTERN_PASSWORD` / `SETUP_INTERN_NAME` to seed an account. Leave intern placeholders if you will only register in the web app — then the Google account that owns the script is treated as admin when that same email is used on signup (email is optional for everyone else).
 
 ```javascript
 var ADMIN_EMAIL = 'you@example.com';
@@ -26,7 +26,7 @@ var SETUP_INTERN_PASSWORD = 'ChangeThisPassword';
 var SETUP_INTERN_NAME = 'Your Full Name';
 ```
 
-Passwords are hashed with a salt. They are never written into the HTML.
+People sign in with a **username**. Email is optional. Passwords are hashed with a salt. They are never written into the HTML. Signup requires password confirmation. Anyone can change their password from the profile menu while signed in.
 
 Share the admin spreadsheet (`1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc`) with the script owner as Editor if it is not already owned by that account.
 
@@ -65,8 +65,9 @@ Use [INVITE.md](INVITE.md) when you invite someone. Put the `/exec` URL at the t
 
 ## What people can do
 
-- Create an account (pending until an admin approves it)
-- Sign in after approval; organisation name is branding only
+- Create an account with a username (email optional; pending until an admin approves it)
+- Confirm password when creating an account; change password anytime from the profile menu
+- Sign in after approval with username (legacy accounts can still use their old email once); organisation name is branding only
 - Log **any day** from the programme start date (including weekends)
 - Week view is Monday–Sunday; **Send records to my sheet** writes every week into the connected Google Sheet
 - Connect a sheet once by sharing it as Editor with the app owner email, then pasting the URL (changing it later needs an admin)

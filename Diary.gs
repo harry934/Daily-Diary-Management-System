@@ -419,7 +419,11 @@ function writeWeekReport_(dest, week, profile) {
   sheet.getRange('A1:G1').merge().setValue(organisation);
   sheet.getRange('A2:G2').merge().setValue('Internship Daily Diary');
   sheet.getRange('A3:G3').merge().setValue('Intern: ' + (profile.name || ''));
-  sheet.getRange('A4:G4').merge().setValue('Email: ' + (profile.email || ''));
+  sheet.getRange('A4:G4').merge().setValue(
+    profile.username
+      ? 'Username: ' + profile.username
+      : (profile.email ? 'Email: ' + profile.email : 'Username: —')
+  );
   sheet.getRange('A5:G5').merge().setValue(week.weekLabel + ' · ' + week.weekRangeShort);
   sheet.getRange('A6:G6').merge().setValue('Time zone: ' + (profile.timezone || getTimezone_()));
 

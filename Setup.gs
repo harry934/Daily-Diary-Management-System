@@ -14,7 +14,7 @@ var APP_TIMEZONE = 'Africa/Nairobi';
 var ADMIN_SPREADSHEET_ID = '1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc';
 var ADMIN_EMAIL = '';
 var DAYS_IN_WEEK = 7;
-var SCHEMA_VERSION = '4';
+var SCHEMA_VERSION = '5';
 
 var DIARY_SHEET_NAME = 'Diary';
 var TASKS_SHEET_NAME = 'Tasks';
@@ -24,7 +24,7 @@ var USERS_SHEET_NAME = 'Users';
 var DIARY_HEADERS = ['id', 'userId', 'date', 'weekday', 'timeIn', 'timeOut', 'assignment', 'hoursWorked', 'updatedAt', 'timeOutReason'];
 var TASKS_HEADERS = ['id', 'userId', 'title', 'notes', 'priority', 'dueDate', 'createdAt', 'updatedAt'];
 var SUBTASKS_HEADERS = ['id', 'userId', 'taskId', 'title', 'done', 'sortOrder', 'updatedAt'];
-var USERS_HEADERS = ['id', 'email', 'name', 'organisation', 'passwordHash', 'passwordSalt', 'programmeStart', 'createdAt', 'role', 'status', 'reportSpreadsheetId'];
+var USERS_HEADERS = ['id', 'username', 'email', 'name', 'organisation', 'passwordHash', 'passwordSalt', 'programmeStart', 'createdAt', 'role', 'status', 'reportSpreadsheetId'];
 
 function setupInitialize() {
   var props = PropertiesService.getScriptProperties();
@@ -58,6 +58,7 @@ function setupInitialize() {
   migrateUsersFromDiarySpreadsheet_(ss);
   seedSetupUserIfRequested_();
   migrateLegacyIntern_();
+  fillMissingUsernamesOnSheet_(getUsersSheet_());
   ensureAdminAccount_();
 
   Logger.log('Setup complete.');
@@ -104,10 +105,12 @@ function seedSetupUserIfRequested_() {
   }
   var salt = generateSalt_();
   var now = nowNairobi_();
+  var name = String(SETUP_INTERN_NAME).trim();
   writeRecord_(getUsersSheet_(), USERS_HEADERS, 0, {
     id: Utilities.getUuid(),
+    username: uniqueUsername_(slugUsernameRaw_(email, name, 'intern')),
     email: email,
-    name: String(SETUP_INTERN_NAME).trim(),
+    name: name,
     organisation: COMPANY_NAME,
     passwordHash: hashPassword_(SETUP_INTERN_PASSWORD, salt),
     passwordSalt: salt,
@@ -138,10 +141,12 @@ function migrateLegacyIntern_() {
     userId = existing.id;
   } else {
     userId = Utilities.getUuid();
+    var internName = String(props.getProperty('INTERN_NAME') || '').trim() || 'Intern';
     writeRecord_(getUsersSheet_(), USERS_HEADERS, 0, {
       id: userId,
+      username: uniqueUsername_(slugUsernameRaw_(email, internName, 'intern')),
       email: email,
-      name: String(props.getProperty('INTERN_NAME') || '').trim() || 'Intern',
+      name: internName,
       organisation: props.getProperty('COMPANY') || 'Kenya Shipyards Limited',
       passwordHash: hash,
       passwordSalt: salt,
@@ -301,20 +306,21 @@ function styleSubtasksSheet_(sheet) {
 }
 
 function styleUsersSheet_(sheet) {
-  migrateSheetToHeaders_(sheet, USERS_HEADERS, { role: 'user', status: 'approved', reportSpreadsheetId: '' });
+  migrateSheetToHeaders_(sheet, USERS_HEADERS, { username: '', role: 'user', status: 'approved', reportSpreadsheetId: '' });
   styleHeaderRow_(sheet, USERS_HEADERS);
   sheet.setColumnWidth(1, 80);
-  sheet.setColumnWidth(2, 220);
-  sheet.setColumnWidth(3, 200);
-  sheet.setColumnWidth(4, 220);
-  sheet.setColumnWidth(5, 280);
-  sheet.setColumnWidth(6, 160);
-  sheet.setColumnWidth(7, 130);
-  sheet.setColumnWidth(8, 160);
-  sheet.setColumnWidth(9, 90);
-  sheet.setColumnWidth(10, 110);
-  sheet.setColumnWidth(11, 220);
-  sheet.getRange('A:K').setNumberFormat('@');
+  sheet.setColumnWidth(2, 140);
+  sheet.setColumnWidth(3, 220);
+  sheet.setColumnWidth(4, 200);
+  sheet.setColumnWidth(5, 220);
+  sheet.setColumnWidth(6, 280);
+  sheet.setColumnWidth(7, 160);
+  sheet.setColumnWidth(8, 130);
+  sheet.setColumnWidth(9, 160);
+  sheet.setColumnWidth(10, 90);
+  sheet.setColumnWidth(11, 110);
+  sheet.setColumnWidth(12, 220);
+  sheet.getRange('A:L').setNumberFormat('@');
 }
 
 function ensureNamedSheet_(ss, name) {
@@ -362,6 +368,7 @@ function ensureAdminUsersSheet_() {
   if (sheetNeedsMigrate_(sheet, USERS_HEADERS)) {
     styleUsersSheet_(sheet);
   }
+  fillMissingUsernamesOnSheet_(sheet);
   return sheet;
 }
 
@@ -433,6 +440,115 @@ function clearEmailDeleted_(email) {
   PropertiesService.getScriptProperties().setProperty('DELETED_EMAILS', kept.join('\n'));
 }
 
+function isUsernameDeleted_(username) {
+  var wanted = String(username || '').trim().toLowerCase();
+  if (!wanted) {
+    return false;
+  }
+  var raw = getScriptProp_('DELETED_USERNAMES', '');
+  return ('\n' + raw + '\n').indexOf('\n' + wanted + '\n') >= 0;
+}
+
+function markUsernameDeleted_(username) {
+  var wanted = String(username || '').trim().toLowerCase();
+  if (!wanted || isUsernameDeleted_(wanted)) {
+    return;
+  }
+  var raw = getScriptProp_('DELETED_USERNAMES', '');
+  var next = raw ? raw + '\n' + wanted : wanted;
+  PropertiesService.getScriptProperties().setProperty('DELETED_USERNAMES', next);
+}
+
+function clearUsernameDeleted_(username) {
+  var wanted = String(username || '').trim().toLowerCase();
+  if (!wanted) {
+    return;
+  }
+  var raw = getScriptProp_('DELETED_USERNAMES', '');
+  var kept = raw.split('\n').filter(function (item) {
+    return item && item !== wanted;
+  });
+  PropertiesService.getScriptProperties().setProperty('DELETED_USERNAMES', kept.join('\n'));
+}
+
+function slugUsernameRaw_(email, name, fallback) {
+  var source = '';
+  var local = String(email || '').trim().toLowerCase().split('@')[0];
+  if (local) {
+    source = local;
+  } else {
+    source = String(name || fallback || 'user').toLowerCase();
+  }
+  var slug = source.replace(/[^a-z0-9._]+/g, '_').replace(/^[._]+|[._]+$/g, '').replace(/_+/g, '_');
+  if (!/^[a-z]/.test(slug)) {
+    slug = ('u' + slug).replace(/[^a-z0-9._]/g, '');
+  }
+  if (slug.length < 3) {
+    slug = (slug + 'user').slice(0, 24);
+  }
+  if (slug.length > 24) {
+    slug = slug.slice(0, 24).replace(/[._]+$/g, '');
+  }
+  if (slug.length < 3) {
+    slug = 'user';
+  }
+  return slug;
+}
+
+function uniqueUsername_(base, extraTaken) {
+  var taken = extraTaken || {};
+  readRecords_(getUsersSheet_(), USERS_HEADERS).forEach(function (row) {
+    var existing = cellAsText_(row.username, 'yyyy-MM-dd').toLowerCase();
+    if (existing) {
+      taken[existing] = true;
+    }
+  });
+  var candidate = base;
+  var n = 2;
+  while (taken[candidate] || isUsernameDeleted_(candidate)) {
+    var suffix = '_' + n;
+    var keep = 24 - suffix.length;
+    if (keep < 3) {
+      keep = 3;
+    }
+    candidate = base.slice(0, keep) + suffix;
+    n += 1;
+  }
+  return candidate;
+}
+
+function fillMissingUsernamesOnSheet_(sheet) {
+  if (!sheet) {
+    return;
+  }
+  var rows = readRecords_(sheet, USERS_HEADERS);
+  var taken = {};
+  rows.forEach(function (row) {
+    var username = cellAsText_(row.username, 'yyyy-MM-dd').toLowerCase();
+    if (username) {
+      taken[username] = true;
+    }
+  });
+  rows.forEach(function (row) {
+    var username = cellAsText_(row.username, 'yyyy-MM-dd').toLowerCase();
+    if (username) {
+      return;
+    }
+    var email = cellAsText_(row.email, 'yyyy-MM-dd');
+    var name = cellAsText_(row.name, 'yyyy-MM-dd');
+    var next = slugUsernameRaw_(email, name, row.id);
+    var n = 2;
+    while (taken[next] || isUsernameDeleted_(next)) {
+      var suffix = '_' + n;
+      next = slugUsernameRaw_(email, name, row.id).slice(0, Math.max(3, 24 - suffix.length)) + suffix;
+      n += 1;
+    }
+    taken[next] = true;
+    row.username = next;
+    writeRecord_(sheet, USERS_HEADERS, row._rowIndex, row);
+  });
+}
+
 function clearLegacyUsersSheet_(sheet) {
   if (!sheet) {
     return;
@@ -471,17 +587,28 @@ function migrateUsersFromDiarySpreadsheet_(ss) {
     return;
   }
   var emails = {};
+  var usernames = {};
   var oldHeaders = headerList_(old);
   var oldRecords = readRecords_(old, oldHeaders.length ? oldHeaders : USERS_HEADERS);
   oldRecords.forEach(function (rec) {
     var email = cellAsText_(rec.email, 'yyyy-MM-dd').toLowerCase();
-    if (!email || emails[email] || isEmailDeleted_(email)) {
+    if (email && (emails[email] || isEmailDeleted_(email))) {
       return;
+    }
+    var name = cellAsText_(rec.name, 'yyyy-MM-dd');
+    var username = cellAsText_(rec.username, 'yyyy-MM-dd').toLowerCase();
+    if (!username || usernames[username] || isUsernameDeleted_(username)) {
+      username = uniqueUsername_(slugUsernameRaw_(email, name, rec.id), usernames);
+    }
+    usernames[username] = true;
+    if (email) {
+      emails[email] = true;
     }
     writeRecord_(dest, USERS_HEADERS, 0, {
       id: rec.id,
+      username: username,
       email: email,
-      name: cellAsText_(rec.name, 'yyyy-MM-dd'),
+      name: name,
       organisation: cellAsText_(rec.organisation, 'yyyy-MM-dd'),
       passwordHash: String(rec.passwordHash || ''),
       passwordSalt: String(rec.passwordSalt || ''),
@@ -491,7 +618,6 @@ function migrateUsersFromDiarySpreadsheet_(ss) {
       status: rec.status || 'approved',
       reportSpreadsheetId: cellAsText_(rec.reportSpreadsheetId, 'yyyy-MM-dd')
     });
-    emails[email] = true;
   });
   clearLegacyUsersSheet_(old);
 }

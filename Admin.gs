@@ -15,7 +15,8 @@ function listUsers_(profile) {
     var user = hydrateUser_(row);
     return {
       id: user.id,
-      email: user.email,
+      username: user.username || '',
+      email: user.email || '',
       name: user.name,
       organisation: user.organisation,
       programmeStart: user.programmeStart,
@@ -183,6 +184,7 @@ function updateUser_(profile, payload) {
     throw new Error('User not found.');
   }
 
+  var username = sanitizeUsername_(payload.username);
   var email = sanitizeEmail_(payload.email);
   var name = sanitizePersonName_(payload.name, 'full name');
   var organisation = sanitizeOrganisation_(payload.organisation);
@@ -207,11 +209,21 @@ function updateUser_(profile, payload) {
     status = 'approved';
   }
 
-  var existing = findUserByEmail_(email);
-  if (existing && existing.id !== user.id) {
-    throw new Error('Another account already uses that email.');
+  if (isUsernameDeleted_(username) && username !== user.username) {
+    throw new Error('That username is not available.');
+  }
+  var existingUsername = findUserByUsername_(username);
+  if (existingUsername && existingUsername.id !== user.id) {
+    throw new Error('Another account already uses that username.');
+  }
+  if (email) {
+    var existingEmail = findUserByEmail_(email);
+    if (existingEmail && existingEmail.id !== user.id) {
+      throw new Error('Another account already uses that email.');
+    }
   }
 
+  user.username = username;
   user.email = email;
   user.name = name;
   user.organisation = organisation;
@@ -239,11 +251,15 @@ function deleteUser_(profile, userId) {
   }
 
   var email = String(user.email || '').trim().toLowerCase();
+  var username = String(user.username || '').trim().toLowerCase();
   var id = String(user.id || '');
   function matchesUser(row) {
     var rowId = cellAsText_(row.id, 'yyyy-MM-dd');
     var rowEmail = cellAsText_(row.email, 'yyyy-MM-dd').toLowerCase();
-    return (id && rowId === id) || (email && rowEmail === email);
+    var rowUsername = cellAsText_(row.username, 'yyyy-MM-dd').toLowerCase();
+    return (id && rowId === id) ||
+      (email && rowEmail === email) ||
+      (username && rowUsername === username);
   }
 
   deleteRecordsForUser_(getDiarySheet_(), DIARY_HEADERS, id);
@@ -256,7 +272,12 @@ function deleteUser_(profile, userId) {
     deleteMatchingUserRows_(legacy, matchesUser);
   } catch (err) {}
 
-  markEmailDeleted_(email);
+  if (email) {
+    markEmailDeleted_(email);
+  }
+  if (username) {
+    markUsernameDeleted_(username);
+  }
   SpreadsheetApp.flush();
   return listUsers_(profile);
 }

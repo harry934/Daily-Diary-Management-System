@@ -28,10 +28,10 @@
 
       <form id="login-form" novalidate>
         <div class="login-form-group">
-          <label for="login-email" class="login-form-label">Email Address</label>
+          <label for="login-username" class="login-form-label">Username</label>
           <div class="login-input-group">
-            <span class="input-icon" data-icon="envelope"></span>
-            <input type="email" id="login-email" class="login-input" placeholder="name@company.com" autocomplete="username" required>
+            <span class="input-icon" data-icon="user"></span>
+            <input type="text" id="login-username" class="login-input" placeholder="your.username" autocomplete="username" required maxlength="24">
           </div>
         </div>
         <div class="login-form-group">
@@ -47,7 +47,7 @@
         <div class="login-options">
           <label class="custom-control-label">
             <input type="checkbox" class="custom-checkbox-input" id="remember-me">
-            <span>Remember email</span>
+            <span>Remember username</span>
           </label>
           <span class="login-secure-note"><span data-icon="lock"></span> Secure session</span>
         </div>
@@ -70,6 +70,13 @@
           </div>
         </div>
         <div class="login-form-group">
+          <label for="register-username" class="login-form-label">Username</label>
+          <div class="login-input-group">
+            <span class="input-icon" data-icon="user"></span>
+            <input type="text" id="register-username" class="login-input" maxlength="24" placeholder="letters, numbers, . or _" autocomplete="username" required>
+          </div>
+        </div>
+        <div class="login-form-group">
           <label for="register-org" class="login-form-label">Organisation name</label>
           <div class="login-input-group">
             <span class="input-icon" data-icon="building"></span>
@@ -77,10 +84,10 @@
           </div>
         </div>
         <div class="login-form-group">
-          <label for="register-email" class="login-form-label">Email Address</label>
+          <label for="register-email" class="login-form-label">Email (optional)</label>
           <div class="login-input-group">
             <span class="input-icon" data-icon="envelope"></span>
-            <input type="email" id="register-email" class="login-input" placeholder="name@company.com" autocomplete="email" required>
+            <input type="email" id="register-email" class="login-input" placeholder="Optional — leave blank if you prefer" autocomplete="email">
           </div>
         </div>
         <div class="login-form-group">
@@ -89,6 +96,16 @@
             <span class="input-icon" data-icon="shield"></span>
             <input type="password" id="register-password" class="login-input login-input-password" placeholder="At least 8 characters" autocomplete="new-password" required minlength="8">
             <button type="button" class="password-toggle-btn" id="toggle-register-password" aria-label="Show password">
+              <span data-icon="eye"></span>
+            </button>
+          </div>
+        </div>
+        <div class="login-form-group">
+          <label for="register-password-confirm" class="login-form-label">Confirm password</label>
+          <div class="login-input-group">
+            <span class="input-icon" data-icon="shield"></span>
+            <input type="password" id="register-password-confirm" class="login-input login-input-password" placeholder="Type the same password again" autocomplete="new-password" required minlength="8">
+            <button type="button" class="password-toggle-btn" id="toggle-register-password-confirm" aria-label="Show password">
               <span data-icon="eye"></span>
             </button>
           </div>
@@ -160,7 +177,7 @@
         <div class="avatar-initials" id="sidebar-initials">DD</div>
         <div class="sidebar-profile-info">
           <div class="sidebar-profile-name" id="sidebar-name">Intern</div>
-          <div class="sidebar-profile-email" id="sidebar-email">email@company.com</div>
+          <div class="sidebar-profile-email" id="sidebar-username">@username</div>
         </div>
       </div>
     </aside>
@@ -190,8 +207,14 @@
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-profile" aria-labelledby="profile-dropdown">
               <li class="dropdown-header" id="profile-welcome">Welcome</li>
               <li><span class="dropdown-item-text" id="profile-org">Organisation</span></li>
-              <li><span class="dropdown-item-text" id="profile-email">email@company.com</span></li>
+              <li><span class="dropdown-item-text" id="profile-username">@username</span></li>
+              <li><span class="dropdown-item-text d-none" id="profile-email"></span></li>
               <li><hr class="dropdown-divider"></li>
+              <li>
+                <button type="button" class="dropdown-item" id="btn-change-password">
+                  <span data-icon="lock"></span> Change password
+                </button>
+              </li>
               <li>
                 <button type="button" class="dropdown-item text-danger" id="btn-logout">
                   <span data-icon="logout"></span> Logout
@@ -430,6 +453,7 @@
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Username</th>
                   <th>Email</th>
                   <th>Organisation</th>
                   <th>Status</th>
@@ -485,8 +509,10 @@
         <input type="hidden" id="edit-user-id" value="">
         <label class="form-label-custom" for="edit-user-name">Full name</label>
         <input type="text" id="edit-user-name" class="form-control-custom" maxlength="80" required>
-        <label class="form-label-custom" for="edit-user-email">Email</label>
-        <input type="email" id="edit-user-email" class="form-control-custom" maxlength="120" required>
+        <label class="form-label-custom" for="edit-user-username">Username</label>
+        <input type="text" id="edit-user-username" class="form-control-custom" maxlength="24" required>
+        <label class="form-label-custom" for="edit-user-email">Email (optional)</label>
+        <input type="email" id="edit-user-email" class="form-control-custom" maxlength="120">
         <label class="form-label-custom" for="edit-user-org">Organisation</label>
         <input type="text" id="edit-user-org" class="form-control-custom" maxlength="80" required>
         <label class="form-label-custom" for="edit-user-start">Programme start</label>
@@ -505,6 +531,30 @@
         <div class="alert-modal-actions">
           <button type="button" class="btn-custom btn-custom-light" id="btn-user-edit-cancel">Cancel</button>
           <button type="submit" class="btn-custom btn-custom-primary" id="btn-user-edit-save">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="password-modal" class="alert-modal d-none" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+    <div class="alert-modal-card user-edit-card">
+      <div class="alert-modal-head">
+        <span data-icon="lock"></span>
+        <div>
+          <h2 id="password-modal-title">Change password</h2>
+          <p>Enter your current password, then choose a new one.</p>
+        </div>
+      </div>
+      <form id="password-form" class="user-edit-form">
+        <label class="form-label-custom" for="password-current">Current password</label>
+        <input type="password" id="password-current" class="form-control-custom" autocomplete="current-password" required>
+        <label class="form-label-custom" for="password-new">New password</label>
+        <input type="password" id="password-new" class="form-control-custom" autocomplete="new-password" required minlength="8">
+        <label class="form-label-custom" for="password-confirm">Confirm new password</label>
+        <input type="password" id="password-confirm" class="form-control-custom" autocomplete="new-password" required minlength="8">
+        <div class="alert-modal-actions">
+          <button type="button" class="btn-custom btn-custom-light" id="btn-password-cancel">Cancel</button>
+          <button type="submit" class="btn-custom btn-custom-primary" id="btn-password-save">Update password</button>
         </div>
       </form>
     </div>

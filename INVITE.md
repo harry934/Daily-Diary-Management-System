@@ -4,19 +4,22 @@ This is a Monday–Sunday internship diary. You log the days you actually work, 
 
 ## 1. Open the app
 
-Ask the admin for the web app link (it ends in `/exec`). Open it in a browser.
+Ask the admin for the web app link (it ends in `/exec`, or a short link that opens it). Open it in a browser.
 
 ## 2. Create your account
 
 On the sign-in screen choose **Create an account** and enter:
 
 - Full name
+- Username (3–24 characters; letters, numbers, dots, or underscores)
 - Organisation name (this is only a label on your diary)
-- Email
-- Password (at least 8 characters)
+- Email (**optional** — leave blank if you prefer)
+- Password (at least 8 characters) and confirm password
 - Programme start date
 
-You **cannot** open the diary until an admin approves the account. After you submit, wait. The admin will approve you, then you sign in with the same email and password.
+You **cannot** open the diary until an admin approves the account. After you submit, wait. The admin will approve you, then you sign in with your **username** and password.
+
+If you already had an account that used email, you can still sign in with that email once, or use the username the system assigned (usually the part before `@` in your old email).
 
 ## 3. Log your days
 
@@ -27,6 +30,8 @@ Any calendar day is allowed, including weekends, from your programme start date 
 - Job assignment (what you were given / what you did)
 
 Hours are calculated from time in and time out. If you leave before noon, add a short reason.
+
+After you save, the form shows **Done for today** and stays blank until the next day. Use **Edit** if you need to change that day’s record.
 
 ## 4. Connect your Google Sheet (once)
 
@@ -45,6 +50,10 @@ If connect fails, the sheet is usually not shared with the app email yet. Share 
 
 Add tasks, set priority (Urgent / High / Medium / Low) and an optional due date. After you sign in, a popup lists urgent or due-soon work.
 
+## 6. Change your password
+
+Open your profile menu (top right) and choose **Change password**. Enter your current password, then the new password twice.
+
 ---
 
-**Admin:** send this file together with the live `/exec` URL.
+**Admin:** send this file together with the live `/exec` URL (or your short link).

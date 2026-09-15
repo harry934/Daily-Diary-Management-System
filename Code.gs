@@ -22,6 +22,7 @@ function migrateSchema_() {
     ensureAdminUsersSheet_();
     migrateUsersFromDiarySpreadsheet_(ss);
     migrateLegacyIntern_();
+    fillMissingUsernamesOnSheet_(getUsersSheet_());
     ensureAdminAccount_();
     PropertiesService.getScriptProperties().setProperty('SCHEMA_VERSION', SCHEMA_VERSION);
   } catch (err) {
@@ -47,9 +48,12 @@ function api(action, payload) {
     var profile;
     switch (String(action || '')) {
       case 'login':
-        return login_(payload.email, payload.password);
+        return login_(payload.username || payload.email, payload.password);
       case 'register':
         return register_(payload);
+      case 'changePassword':
+        profile = requireSession_(payload.token);
+        return changePassword_(profile, payload);
       case 'logout':
         return logout_(payload.token);
       case 'session':
