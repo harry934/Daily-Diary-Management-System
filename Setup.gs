@@ -11,6 +11,9 @@ var SETUP_INTERN_NAME = 'Your Full Name';
 var COMPANY_NAME = 'Daily Diary';
 var PROGRAMME_START_DATE = '2026-09-07';
 var APP_TIMEZONE = 'Africa/Nairobi';
+var ADMIN_SPREADSHEET_ID = '1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc';
+var ADMIN_EMAIL = '';
+var DAYS_IN_WEEK = 7;
 
 var DIARY_SHEET_NAME = 'Diary';
 var TASKS_SHEET_NAME = 'Tasks';
@@ -20,7 +23,7 @@ var USERS_SHEET_NAME = 'Users';
 var DIARY_HEADERS = ['id', 'userId', 'date', 'weekday', 'timeIn', 'timeOut', 'assignment', 'hoursWorked', 'updatedAt', 'timeOutReason'];
 var TASKS_HEADERS = ['id', 'userId', 'title', 'notes', 'priority', 'dueDate', 'createdAt', 'updatedAt'];
 var SUBTASKS_HEADERS = ['id', 'userId', 'taskId', 'title', 'done', 'sortOrder', 'updatedAt'];
-var USERS_HEADERS = ['id', 'email', 'name', 'organisation', 'passwordHash', 'passwordSalt', 'programmeStart', 'createdAt'];
+var USERS_HEADERS = ['id', 'email', 'name', 'organisation', 'passwordHash', 'passwordSalt', 'programmeStart', 'createdAt', 'role', 'status', 'reportSpreadsheetId'];
 
 function setupInitialize() {
   var props = PropertiesService.getScriptProperties();
@@ -41,15 +44,19 @@ function setupInitialize() {
   }
 
   ss.setSpreadsheetTimeZone(APP_TIMEZONE);
-  ensureAllSheets_(ss);
+  ensureDiaryAndTaskSheets_(ss);
+  ensureAdminUsersSheet_();
 
   props.setProperties({
     SPREADSHEET_ID: spreadsheetId,
-    TIMEZONE: APP_TIMEZONE
+    TIMEZONE: APP_TIMEZONE,
+    ADMIN_SPREADSHEET_ID: ADMIN_SPREADSHEET_ID
   }, false);
 
+  migrateUsersFromDiarySpreadsheet_(ss);
   seedSetupUserIfRequested_();
   migrateLegacyIntern_();
+  promoteAdminUsers_();
 
   Logger.log('Setup complete.');
   Logger.log('Spreadsheet: ' + ss.getUrl());
@@ -103,7 +110,10 @@ function seedSetupUserIfRequested_() {
     passwordHash: hashPassword_(SETUP_INTERN_PASSWORD, salt),
     passwordSalt: salt,
     programmeStart: PROGRAMME_START_DATE,
-    createdAt: now
+    createdAt: now,
+    role: isAdminEmail_(email) ? 'admin' : 'user',
+    status: isAdminEmail_(email) ? 'approved' : 'approved',
+    reportSpreadsheetId: ''
   });
   Logger.log('Seeded account: ' + email);
 }
@@ -131,7 +141,10 @@ function migrateLegacyIntern_() {
       passwordHash: hash,
       passwordSalt: salt,
       programmeStart: props.getProperty('PROGRAMME_START') || PROGRAMME_START_DATE,
-      createdAt: nowNairobi_()
+      createdAt: nowNairobi_(),
+      role: isAdminEmail_(email) ? 'admin' : 'user',
+      status: 'approved',
+      reportSpreadsheetId: ''
     });
   }
 
@@ -283,7 +296,7 @@ function styleSubtasksSheet_(sheet) {
 }
 
 function styleUsersSheet_(sheet) {
-  migrateSheetToHeaders_(sheet, USERS_HEADERS, {});
+  migrateSheetToHeaders_(sheet, USERS_HEADERS, { role: 'user', status: 'approved', reportSpreadsheetId: '' });
   styleHeaderRow_(sheet, USERS_HEADERS);
   sheet.setColumnWidth(1, 80);
   sheet.setColumnWidth(2, 220);
@@ -293,7 +306,10 @@ function styleUsersSheet_(sheet) {
   sheet.setColumnWidth(6, 160);
   sheet.setColumnWidth(7, 130);
   sheet.setColumnWidth(8, 160);
-  sheet.getRange('A:H').setNumberFormat('@');
+  sheet.setColumnWidth(9, 90);
+  sheet.setColumnWidth(10, 110);
+  sheet.setColumnWidth(11, 220);
+  sheet.getRange('A:K').setNumberFormat('@');
 }
 
 function ensureNamedSheet_(ss, name) {
@@ -328,7 +344,15 @@ function ensureTasksSheets_(ss) {
   return { tasks: tasks, subtasks: subtasks };
 }
 
-function ensureUsersSheet_(ss) {
+function ensureDiaryAndTaskSheets_(ss) {
+  ensureDiarySheet_(ss);
+  ensureTasksSheets_(ss);
+  return ss;
+}
+
+function ensureAdminUsersSheet_() {
+  var ss = getAdminSpreadsheet_();
+  ss.setSpreadsheetTimeZone(APP_TIMEZONE);
   var sheet = ensureNamedSheet_(ss, USERS_SHEET_NAME);
   if (sheetNeedsMigrate_(sheet, USERS_HEADERS)) {
     styleUsersSheet_(sheet);
@@ -336,10 +360,109 @@ function ensureUsersSheet_(ss) {
   return sheet;
 }
 
+function ownerEmail_() {
+  try {
+    return String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+  } catch (err) {
+    return '';
+  }
+}
+
+function adminEmail_() {
+  var configured = String(ADMIN_EMAIL || '').trim().toLowerCase();
+  if (configured && configured.indexOf('@') > 0 && configured !== 'your.email@example.com') {
+    return configured;
+  }
+  var setup = String(SETUP_INTERN_EMAIL || '').trim().toLowerCase();
+  if (setup.indexOf('@') > 0 && setup !== 'your.email@example.com') {
+    return setup;
+  }
+  return ownerEmail_();
+}
+
+function isAdminEmail_(email) {
+  var admin = adminEmail_();
+  return !!(admin && String(email || '').trim().toLowerCase() === admin);
+}
+
+function getAdminSpreadsheet_() {
+  var id = ADMIN_SPREADSHEET_ID || getScriptProp_('ADMIN_SPREADSHEET_ID', '');
+  if (!id) {
+    throw new Error('Admin spreadsheet is not configured.');
+  }
+  try {
+    return SpreadsheetApp.openById(id);
+  } catch (err) {
+    throw new Error('Cannot open the admin spreadsheet. Share it with ' + (ownerEmail_() || 'the app owner') + ' as Editor.');
+  }
+}
+
+function migrateUsersFromDiarySpreadsheet_(ss) {
+  if (!ss) {
+    return;
+  }
+  var old = ss.getSheetByName(USERS_SHEET_NAME);
+  if (!old || old.getLastRow() < 2) {
+    return;
+  }
+  var dest = getUsersSheet_();
+  var existing = readRecords_(dest, USERS_HEADERS);
+  var emails = {};
+  existing.forEach(function (row) {
+    emails[cellAsText_(row.email, 'yyyy-MM-dd').toLowerCase()] = true;
+  });
+  var oldHeaders = headerList_(old);
+  var oldRecords = readRecords_(old, oldHeaders.length ? oldHeaders : USERS_HEADERS);
+  oldRecords.forEach(function (rec) {
+    var email = cellAsText_(rec.email, 'yyyy-MM-dd').toLowerCase();
+    if (!email || emails[email]) {
+      return;
+    }
+    writeRecord_(dest, USERS_HEADERS, 0, {
+      id: rec.id,
+      email: email,
+      name: cellAsText_(rec.name, 'yyyy-MM-dd'),
+      organisation: cellAsText_(rec.organisation, 'yyyy-MM-dd'),
+      passwordHash: String(rec.passwordHash || ''),
+      passwordSalt: String(rec.passwordSalt || ''),
+      programmeStart: cellAsText_(rec.programmeStart, 'yyyy-MM-dd') || PROGRAMME_START_DATE,
+      createdAt: cellAsText_(rec.createdAt, 'yyyy-MM-dd HH:mm:ss') || nowNairobi_(),
+      role: rec.role || (isAdminEmail_(email) ? 'admin' : 'user'),
+      status: rec.status || 'approved',
+      reportSpreadsheetId: cellAsText_(rec.reportSpreadsheetId, 'yyyy-MM-dd')
+    });
+    emails[email] = true;
+  });
+}
+
+function promoteAdminUsers_() {
+  var admin = adminEmail_();
+  if (!admin) {
+    return;
+  }
+  var sheet = getUsersSheet_();
+  readRecords_(sheet, USERS_HEADERS).forEach(function (row) {
+    var email = cellAsText_(row.email, 'yyyy-MM-dd').toLowerCase();
+    if (email !== admin) {
+      return;
+    }
+    row.email = email;
+    row.name = cellAsText_(row.name, 'yyyy-MM-dd');
+    row.organisation = cellAsText_(row.organisation, 'yyyy-MM-dd');
+    row.passwordHash = String(row.passwordHash || '');
+    row.passwordSalt = String(row.passwordSalt || '');
+    row.programmeStart = cellAsText_(row.programmeStart, 'yyyy-MM-dd');
+    row.createdAt = cellAsText_(row.createdAt, 'yyyy-MM-dd HH:mm:ss');
+    row.role = 'admin';
+    row.status = 'approved';
+    row.reportSpreadsheetId = cellAsText_(row.reportSpreadsheetId, 'yyyy-MM-dd');
+    writeRecord_(sheet, USERS_HEADERS, row._rowIndex, row);
+  });
+}
+
 function ensureAllSheets_(ss) {
-  ensureDiarySheet_(ss);
-  ensureTasksSheets_(ss);
-  ensureUsersSheet_(ss);
+  ensureDiaryAndTaskSheets_(ss);
+  ensureAdminUsersSheet_();
   return ss;
 }
 
@@ -406,13 +529,7 @@ function getSubtasksSheet_() {
 }
 
 function getUsersSheet_() {
-  var ss = getDiarySpreadsheet_();
-  var sheet = ss.getSheetByName(USERS_SHEET_NAME);
-  if (!sheet) {
-    sheet = ensureUsersSheet_(ss);
-  } else if (sheetNeedsMigrate_(sheet, USERS_HEADERS)) {
-    styleUsersSheet_(sheet);
-  }
+  var sheet = ensureAdminUsersSheet_();
   return sheet;
 }
 

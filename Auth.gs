@@ -92,6 +92,35 @@ function sanitizeProgrammeStart_(value) {
   return date;
 }
 
+function hydrateUser_(row) {
+  if (!row) {
+    return null;
+  }
+  var email = cellAsText_(row.email, 'yyyy-MM-dd').toLowerCase();
+  var role = String(row.role || 'user').toLowerCase() === 'admin' ? 'admin' : 'user';
+  if (isAdminEmail_(email)) {
+    role = 'admin';
+  }
+  var status = String(row.status || 'approved').toLowerCase();
+  if (status !== 'pending' && status !== 'disabled' && status !== 'approved') {
+    status = 'approved';
+  }
+  if (role === 'admin' && status === 'pending') {
+    status = 'approved';
+  }
+  row.email = email;
+  row.name = cellAsText_(row.name, 'yyyy-MM-dd');
+  row.organisation = cellAsText_(row.organisation, 'yyyy-MM-dd');
+  row.passwordHash = String(row.passwordHash || '');
+  row.passwordSalt = String(row.passwordSalt || '');
+  row.programmeStart = cellAsText_(row.programmeStart, 'yyyy-MM-dd') || PROGRAMME_START_DATE;
+  row.createdAt = cellAsText_(row.createdAt, 'yyyy-MM-dd HH:mm:ss');
+  row.role = role;
+  row.status = status;
+  row.reportSpreadsheetId = cellAsText_(row.reportSpreadsheetId, 'yyyy-MM-dd');
+  return row;
+}
+
 function profileFromUser_(user) {
   return {
     userId: user.id,
@@ -100,7 +129,10 @@ function profileFromUser_(user) {
     organisation: user.organisation,
     company: user.organisation,
     programmeStart: user.programmeStart,
-    timezone: getTimezone_()
+    timezone: getTimezone_(),
+    role: user.role || 'user',
+    status: user.status || 'approved',
+    reportSpreadsheetId: user.reportSpreadsheetId || ''
   };
 }
 
@@ -112,17 +144,36 @@ function findUserByEmail_(email) {
   var rows = readRecords_(getUsersSheet_(), USERS_HEADERS);
   for (var i = 0; i < rows.length; i++) {
     if (cellAsText_(rows[i].email, 'yyyy-MM-dd').toLowerCase() === normalized) {
-      rows[i].email = cellAsText_(rows[i].email, 'yyyy-MM-dd').toLowerCase();
-      rows[i].name = cellAsText_(rows[i].name, 'yyyy-MM-dd');
-      rows[i].organisation = cellAsText_(rows[i].organisation, 'yyyy-MM-dd');
-      rows[i].passwordHash = String(rows[i].passwordHash || '');
-      rows[i].passwordSalt = String(rows[i].passwordSalt || '');
-      rows[i].programmeStart = cellAsText_(rows[i].programmeStart, 'yyyy-MM-dd') || PROGRAMME_START_DATE;
-      rows[i].createdAt = cellAsText_(rows[i].createdAt, 'yyyy-MM-dd HH:mm:ss');
-      return rows[i];
+      return hydrateUser_(rows[i]);
     }
   }
   return null;
+}
+
+function findUserById_(id) {
+  var wanted = String(id || '').trim();
+  if (!wanted) {
+    return null;
+  }
+  var rows = readRecords_(getUsersSheet_(), USERS_HEADERS);
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].id === wanted) {
+      return hydrateUser_(rows[i]);
+    }
+  }
+  return null;
+}
+
+function assertUserActive_(user) {
+  if (!user) {
+    throw new Error('Session expired. Please sign in again.');
+  }
+  if (user.status === 'pending') {
+    throw new Error('Your account is waiting for admin approval.');
+  }
+  if (user.status === 'disabled') {
+    throw new Error('This account has been disabled. Contact the admin.');
+  }
 }
 
 function cache_() {
@@ -198,7 +249,9 @@ function requireSession_(token) {
   if (!profile || !profile.userId) {
     throw new Error('Session expired. Please sign in again.');
   }
-  return profile;
+  var user = findUserById_(profile.userId);
+  assertUserActive_(user);
+  return profileFromUser_(user);
 }
 
 function programmeStartOf_(profile) {
@@ -249,6 +302,12 @@ function login_(email, password) {
   }
 
   clearFailedLogin_(normalized);
+  if (user.status === 'pending') {
+    return { ok: false, error: 'Your account is waiting for admin approval. You can sign in after it is approved.' };
+  }
+  if (user.status === 'disabled') {
+    return { ok: false, error: 'This account has been disabled. Contact the admin.' };
+  }
   var profile = profileFromUser_(user);
   return {
     ok: true,
@@ -289,6 +348,7 @@ function register_(payload) {
     }
 
     var salt = generateSalt_();
+    var isAdmin = isAdminEmail_(email);
     var user = {
       id: Utilities.getUuid(),
       email: email,
@@ -297,10 +357,20 @@ function register_(payload) {
       passwordHash: hashPassword_(password, salt),
       passwordSalt: salt,
       programmeStart: programmeStart,
-      createdAt: nowNairobi_()
+      createdAt: nowNairobi_(),
+      role: isAdmin ? 'admin' : 'user',
+      status: isAdmin ? 'approved' : 'pending',
+      reportSpreadsheetId: ''
     };
     writeRecord_(getUsersSheet_(), USERS_HEADERS, 0, user);
     clearFailedLogin_(email);
+    if (user.status === 'pending') {
+      return {
+        ok: true,
+        pending: true,
+        message: 'Account created. An admin must approve it before you can sign in.'
+      };
+    }
     var profile = profileFromUser_(user);
     return {
       ok: true,
@@ -321,10 +391,11 @@ function logout_(token) {
 }
 
 function getSession_(token) {
-  var profile = readSession_(token);
-  if (!profile || !profile.userId) {
-    return { ok: false, error: 'Session expired. Please sign in again.' };
+  try {
+    var profile = requireSession_(token);
+    cache_().put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
+    return { ok: true, profile: profile };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
   }
-  cache_().put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
-  return { ok: true, profile: profile };
 }

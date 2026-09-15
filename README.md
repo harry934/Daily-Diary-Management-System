@@ -1,31 +1,34 @@
 # Daily Diary
 
-Web-based Monday–Friday internship diary. Anyone can create an account, choose an **organisation name** for branding, record **date, time in, time out, job assignment, and hours worked**, organise tasks by priority and due date, then download a week as Excel.
+Web-based internship diary. People create an account with an organisation name; an **admin approves** them before they can sign in. They record **any working day**, track tasks, and send each week’s summary to **their own Google Sheet**.
 
 | Layer | Stack |
 | --- | --- |
 | Database | Google Sheets |
 | Backend | Google Apps Script |
-| Frontend | HTML, CSS, JavaScript, Font Awesome, Google Fonts (Plus Jakarta Sans) |
+| Frontend | HTML, CSS, JavaScript, Google Fonts (Plus Jakarta Sans), inline SVG |
 | Time zone | Africa/Nairobi |
 
 GitHub: https://github.com/harry934/Daily-Diary-Management-System
 
 Existing Apps Script project ID: `1WDunC7vNnZrtwaYOUCz8sSHK1JH-UtK3MIgyUp26VkgThceBX1Wx9Nof`
 
-## 1. One-time spreadsheet setup
+Admin users spreadsheet ID: `1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc`
 
-Open [Setup.gs](Setup.gs). You can leave the intern placeholders as they are — people create their own accounts in the web app.
+## 1. One-time setup
 
-If you want to seed the first account from the editor, change these three values, then run setup:
+Open [Setup.gs](Setup.gs). Set `ADMIN_EMAIL` to the email you will use to sign in as admin (or set `SETUP_INTERN_EMAIL` / `SETUP_INTERN_PASSWORD` / `SETUP_INTERN_NAME` to seed that admin account). Leave intern placeholders if you will only register in the web app — then the Google account that owns the script is treated as admin when that same email registers.
 
 ```javascript
+var ADMIN_EMAIL = 'you@example.com';
 var SETUP_INTERN_EMAIL = 'your.email@example.com';
 var SETUP_INTERN_PASSWORD = 'ChangeThisPassword';
 var SETUP_INTERN_NAME = 'Your Full Name';
 ```
 
-Use a strong unique password. It is hashed with a salt. It is never written into the HTML.
+Passwords are hashed with a salt. They are never written into the HTML.
+
+Share the admin spreadsheet (`1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc`) with the script owner as Editor if it is not already owned by that account.
 
 ## 2. Push the project (optional, if you use clasp)
 
@@ -42,15 +45,11 @@ clasp push --force
 1. Open the script: `https://script.google.com/d/1WDunC7vNnZrtwaYOUCz8sSHK1JH-UtK3MIgyUp26VkgThceBX1Wx9Nof/edit`
 2. Select function `setupInitialize` (first time only)
 3. Click **Run**
-4. Allow **Sheets**, **Drive**, and **external requests** (needed for Excel download)
+4. Allow **Sheets** and **Drive**
 
-The function creates (or reuses) a spreadsheet named **Daily Diary** with `Users`, `Diary`, `Tasks`, and `Subtasks` tabs. Existing intern logins stored in Script Properties are copied into `Users` so that diary is not lost.
-
-If setup already ran, you do not need to run it again. Re-authorize once after this update so Excel export still works.
+The function creates (or reuses) the diary spreadsheet (`Diary`, `Tasks`, `Subtasks`) and the `Users` tab on the admin spreadsheet. Existing intern logins are copied into Users so diary history is not lost.
 
 After first setup, change `SETUP_INTERN_PASSWORD` back to a placeholder if you used it.
-
-To rotate that seeded password later: set `SETUP_INTERN_PASSWORD` and run `setupChangePassword`.
 
 ## 4. Deploy the web app
 
@@ -60,31 +59,27 @@ To rotate that seeded password later: set `SETUP_INTERN_PASSWORD` and run `setup
 4. Who has access: **Anyone**
 5. Deploy and copy the `/exec` URL
 
-After a new deploy, hard-refresh the `/exec` URL so the browser does not keep the old page.
+Hard-refresh the `/exec` URL after a new deploy.
 
-## What you can do in the app
+Use [INVITE.md](INVITE.md) when you invite someone. Put the `/exec` URL at the top of that note.
 
-- **Create an account** with your name, email, password, organisation name, and programme start date
-- Sign in; organisation name appears in the sidebar, header, footer, and Excel export
-- Record **one weekday at a time** (Prev / Next skip Saturday and Sunday; nothing before your programme start)
-- Use the **Mon–Fri week dots** to jump around the current week (lime = already saved)
-- Set time with a stepper clock. Time out stays **PM** unless you tap **Left before noon** and give a reason
-- Write the job assignment as a list (up to 4000 characters). **Add line** inserts `- `
-- Unsaved typing is kept as a **session draft** — refresh the tab and the list comes back
-- **Save day** or **Save and next**. Hours fill in from time in / out
-- Download a clean `.xlsx` for the week of the day you are on
-- Open **Summary** for every logged day (times, assignment, hours, AM clock-out reason) plus programme totals and open/urgent/overdue tasks
-- Open **Tasks** to add, **edit**, tag priority (Urgent / High / Medium / Low), set a due date, add subtasks, and filter the list
-- After sign-in, a popup lists tasks that are **urgent** or **due soon** (today, overdue, or within two days)
+## What people can do
 
-Each account only sees its own diary and tasks. The organisation name is a label, not a shared workspace.
+- Create an account (pending until an admin approves it)
+- Sign in after approval; organisation name is branding only
+- Log **any day** from the programme start date (including weekends)
+- Week view is Monday–Sunday; send that week to a connected Google Sheet
+- Connect a sheet by sharing it as Editor with the app owner email, then pasting the URL
+- Open **Summary** for every logged day plus task counts
+- Open **Tasks** to add, edit, tag priority, and set due dates
+- After sign-in, a popup lists urgent or due-soon tasks
+- Admins open **Admin** to approve or disable accounts
 
-Sessions last up to 6 hours (Apps Script cache limit). After that, sign in again.
+Each account only sees its own diary and tasks. Sessions last up to 6 hours.
 
 ## Security notes
 
-- Custom login (not Google Sign-In). Anyone with the URL sees the login / create-account screen.
+- Custom login (not Google Sign-In)
 - Failed logins lock for 15 minutes after 5 attempts
-- Every save and export checks the session token on the server
-- The spreadsheet stays in the deployer’s Google Drive; the web app runs as that Google account
-- Passwords are salted SHA-256 hashes in the Users sheet — never stored in HTML
+- Every save checks the session token on the server
+- The diary spreadsheet and admin Users sheet stay in Google Drive; the web app runs as the deployer

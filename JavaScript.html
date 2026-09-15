@@ -20,8 +20,53 @@
     tasks: [],
     taskFilter: 'all',
     taskToday: '',
-    editingTaskId: ''
+    editingTaskId: '',
+    report: null
   };
+
+  var ICONS = {
+    book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+    envelope: '<rect x="3" y="5" width="18" height="14"/><path d="m3 7 9 6 9-6"/>',
+    shield: '<path d="M12 3 4 6v6c0 5 3.4 7.8 8 9 4.6-1.2 8-4 8-9V6z"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 13.4 13.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-4.2 4.8"/><path d="M6.1 6.1C3.5 7.8 2 12 2 12s3.5 7 10 7a11 11 0 0 0 4.2-.8"/>',
+    lock: '<rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    alert: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 9v5"/><path d="M12 17h.01"/>',
+    'arrow-right': '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/>',
+    building: '<path d="M4 21V5l8-2 8 2v16"/><path d="M9 21v-6h6v6"/><path d="M9 9h.01M15 9h.01M9 13h.01M15 13h.01"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    grid: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+    chart: '<path d="M4 20V10M12 20V4M20 20v-7"/>',
+    check: '<path d="M9 11 4 16l5 5"/><path d="M4 16h16"/>',
+    users: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.8-3 3.2-5 6-5s5.2 2 6 5M14 20c.4-2 1.8-3.5 3.5-3.5 1.5 0 2.8 1 3.5 2.5"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    sheet: '<rect x="5" y="3" width="14" height="18"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+    'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+    'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+    'chevron-right': '<path d="m9 6 6 6-6 6"/>',
+    logout: '<path d="M10 17H5V7h5"/><path d="m14 16 5-4-5-4"/><path d="M19 12H9"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    save: '<path d="M5 5h11l3 3v11H5z"/><path d="M8 5v5h8"/><path d="M8 19v-6h8v6"/>',
+    pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m15 5 4 4"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/>',
+    x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    bell: '<path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    checkmark: '<path d="M5 13l4 4L19 7"/>',
+    spin: '<path d="M12 3a9 9 0 1 1-9 9"/>'
+  };
+
+  function iconSvg(name) {
+    var extra = name === 'spin' ? ' icon-spin' : '';
+    return '<svg class="icon' + extra + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || ICONS.alert) + '</svg>';
+  }
+
+  function fillIcons(root) {
+    (root || document).querySelectorAll('[data-icon]').forEach(function (el) {
+      el.innerHTML = iconSvg(el.getAttribute('data-icon'));
+    });
+  }
 
   function $(id) {
     return document.getElementById(id);
@@ -53,7 +98,7 @@
         button.setAttribute('data-idle-html', button.innerHTML);
       }
       button.disabled = true;
-      button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>' + (label || 'Working…') + '</span>';
+      button.innerHTML = iconSvg('spin') + '<span>' + (label || 'Working…') + '</span>';
     } else {
       button.disabled = false;
       var idle = button.getAttribute('data-idle-html');
@@ -72,7 +117,7 @@
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'panel-busy d-none';
-      overlay.innerHTML = '<div class="panel-busy-card"><i class="fa-solid fa-spinner fa-spin"></i><span></span></div>';
+      overlay.innerHTML = '<div class="panel-busy-card">' + iconSvg('spin') + '<span></span></div>';
       panel.appendChild(overlay);
     }
     overlay.querySelector('span').textContent = message || 'Loading…';
@@ -171,27 +216,11 @@
   }
 
   function previousWeekday(dateStr) {
-    var prev = addDaysIso(dateStr, -1);
-    var day = weekdayIndex(prev);
-    if (day === 0) {
-      return addDaysIso(prev, -2);
-    }
-    if (day === 6) {
-      return addDaysIso(prev, -1);
-    }
-    return prev;
+    return addDaysIso(dateStr, -1);
   }
 
   function nextWeekday(dateStr) {
-    var next = addDaysIso(dateStr, 1);
-    var day = weekdayIndex(next);
-    if (day === 6) {
-      return addDaysIso(next, 2);
-    }
-    if (day === 0) {
-      return addDaysIso(next, 1);
-    }
-    return next;
+    return addDaysIso(dateStr, 1);
   }
 
   function draftKey(date) {
@@ -441,7 +470,7 @@
     var host = $('toast-host');
     var item = document.createElement('div');
     item.className = 'toast-item ' + (type || 'success');
-    item.innerHTML = '<i class="fa-solid ' + (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check') + '"></i><span></span>';
+    item.innerHTML = iconSvg(type === 'error' ? 'alert' : 'checkmark') + '<span></span>';
     item.querySelector('span').textContent = message;
     host.appendChild(item);
     setTimeout(function () {
@@ -451,6 +480,8 @@
 
   function setAuthError(alertId, textId, message) {
     var alertBox = $(alertId);
+    alertBox.classList.remove('alert-custom-success');
+    alertBox.classList.add('alert-custom-danger');
     if (!message) {
       alertBox.classList.add('d-none');
       $(textId).textContent = '';
@@ -482,7 +513,7 @@
     $('auth-title').textContent = register ? 'Create your account' : 'Welcome back';
     $('auth-subtitle').textContent = register
       ? 'Choose the organisation name you want to use. Your diary stays private to this account.'
-      : 'Sign in to record Monday–Friday internship hours';
+      : 'Sign in to record the days you actually work';
     $('auth-switch').innerHTML = register
       ? 'Already have an account? <button type="button" id="btn-show-login">Sign in</button>'
       : 'New here? <button type="button" id="btn-show-register">Create an account</button>';
@@ -492,6 +523,7 @@
       setRegisterError('');
       showAuthMode(register ? 'login' : 'register');
     });
+    fillIcons($('auth-switch'));
     if (register && !$('register-start').value) {
       $('register-start').value = '2026-09-07';
     }
@@ -503,7 +535,7 @@
       var hidden = input.getAttribute('type') === 'password';
       input.setAttribute('type', hidden ? 'text' : 'password');
       this.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
-      this.querySelector('i').className = hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+      this.innerHTML = iconSvg(hidden ? 'eye-off' : 'eye');
     });
   }
 
@@ -534,6 +566,7 @@
     $('profile-welcome').textContent = 'Welcome, ' + name;
     $('profile-org').textContent = org;
     $('profile-email').textContent = email;
+    $('nav-admin-item').classList.toggle('d-none', profile.role !== 'admin');
   }
 
   function closeSidebar() {
@@ -543,7 +576,7 @@
 
   function showPanel(name) {
     state.panel = name;
-    ['diary', 'summary', 'tasks'].forEach(function (panel) {
+    ['diary', 'summary', 'tasks', 'admin'].forEach(function (panel) {
       var el = $('panel-' + panel);
       if (el) {
         el.classList.toggle('d-none', panel !== name);
@@ -552,7 +585,6 @@
     document.querySelectorAll('.sidebar-menu-link').forEach(function (link) {
       link.classList.toggle('active', link.getAttribute('data-panel') === name);
     });
-    $('btn-export').classList.toggle('d-none', name !== 'diary');
     closeSidebar();
     if (name === 'summary') {
       setPanelBusy('panel-summary', true, 'Loading summary…');
@@ -564,6 +596,12 @@
       setPanelBusy('panel-tasks', true, 'Loading tasks…');
       loadTasks().then(function () {
         setPanelBusy('panel-tasks', false);
+      });
+    }
+    if (name === 'admin') {
+      setPanelBusy('panel-admin', true, 'Loading accounts…');
+      loadAdminUsers().then(function () {
+        setPanelBusy('panel-admin', false);
       });
     }
   }
@@ -613,7 +651,7 @@
     $('day-subtitle').textContent = formatDisplayDate(day.date) + ' · ' + day.weekLabel;
     $('week-label').textContent = day.weekLabel;
     $('btn-prev-day').disabled = !day.canPrev;
-    $('stat-days').textContent = day.stats.daysLogged + ' / 5';
+    $('stat-days').textContent = day.stats.daysLogged + ' / 7';
     $('stat-hours').textContent = day.stats.totalHours;
     $('stat-week-badge').textContent = day.weekLabel;
     $('stat-week-copy').textContent = day.weekRangeShort || '';
@@ -724,30 +762,122 @@
     });
   }
 
-  function downloadExcel() {
-    var button = $('btn-export');
-    setButtonBusy(button, true, 'Preparing…');
-    api('exportExcel', { token: state.token, weekStart: state.weekStart }).then(function (result) {
-      var bytes = Uint8Array.from(atob(result.base64), function (char) {
-        return char.charCodeAt(0);
-      });
-      var blob = new Blob([bytes], {
-        type: result.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-      var url = URL.createObjectURL(blob);
-      var link = document.createElement('a');
-      link.href = url;
-      link.download = result.filename || 'daily-diary.xlsx';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      showToast('Excel downloaded.');
+  function renderReportSetup(result) {
+    result = result || {};
+    if (result.ownerEmail) {
+      $('report-owner-email').textContent = result.ownerEmail;
+    }
+    if (result.connected) {
+      $('report-status').textContent = 'Connected to “' + (result.spreadsheetTitle || 'your sheet') + '”. Send a week whenever you want.';
+      $('report-steps').classList.add('d-none');
+      $('report-url').placeholder = 'Paste a new URL to reconnect';
+    } else {
+      $('report-status').textContent = 'Connect your own Google Sheet to receive each week’s summary.';
+      $('report-steps').classList.remove('d-none');
+    }
+  }
+
+  function loadReportSetup() {
+    return api('getReportSetup', { token: state.token }).then(function (result) {
+      state.report = result;
+      renderReportSetup(result);
+      return result;
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  function connectReportSheet(button) {
+    setButtonBusy(button, true, 'Connecting…');
+    return api('connectReportSheet', {
+      token: state.token,
+      spreadsheet: $('report-url').value
+    }).then(function (result) {
+      state.report = result;
+      renderReportSetup(result);
+      $('report-url').value = '';
+      showToast('Sheet connected.');
     }).catch(function (err) {
       showToast(err.message, 'error');
-      if (/session expired/i.test(err.message)) {
-        expireSession();
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function sendWeekToSheet(button) {
+    if (state.report && !state.report.connected) {
+      showToast('Connect your Google Sheet first. The steps are on the dashboard.', 'error');
+      showPanel('diary');
+      $('report-url').focus();
+      return Promise.resolve();
+    }
+    setButtonBusy(button, true, 'Sending…');
+    return api('sendWeekReport', { token: state.token, weekStart: state.weekStart }).then(function (result) {
+      showToast((result.weekLabel || 'Week') + ' sent to your Google Sheet.');
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+      if (/connect/i.test(err.message)) {
+        showPanel('diary');
       }
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function loadAdminUsers() {
+    return api('listUsers', { token: state.token }).then(function (result) {
+      var body = $('admin-users-body');
+      body.innerHTML = '';
+      if (!result.users.length) {
+        var empty = document.createElement('tr');
+        empty.innerHTML = '<td colspan="5">No accounts yet.</td>';
+        body.appendChild(empty);
+        return;
+      }
+      result.users.forEach(function (user) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td>';
+        tr.cells[0].textContent = user.name;
+        tr.cells[1].textContent = user.email;
+        tr.cells[2].textContent = user.organisation;
+        tr.cells[3].textContent = user.role === 'admin' ? 'admin · ' + user.status : user.status;
+        var actions = document.createElement('div');
+        actions.className = 'admin-actions';
+        if (user.status !== 'approved') {
+          var approve = document.createElement('button');
+          approve.type = 'button';
+          approve.className = 'btn-custom btn-custom-sm btn-custom-primary';
+          approve.textContent = 'Approve';
+          approve.addEventListener('click', function () {
+            setUserStatus(user.id, 'approved', approve);
+          });
+          actions.appendChild(approve);
+        }
+        if (user.status !== 'disabled' && user.role !== 'admin') {
+          var disable = document.createElement('button');
+          disable.type = 'button';
+          disable.className = 'btn-custom btn-custom-sm btn-custom-light';
+          disable.textContent = 'Disable';
+          disable.addEventListener('click', function () {
+            setUserStatus(user.id, 'disabled', disable);
+          });
+          actions.appendChild(disable);
+        }
+        tr.cells[4].appendChild(actions);
+        body.appendChild(tr);
+      });
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+    });
+  }
+
+  function setUserStatus(userId, status, button) {
+    setButtonBusy(button, true, 'Saving…');
+    api('setUserStatus', { token: state.token, userId: userId, status: status }).then(function () {
+      showToast(status === 'approved' ? 'Account approved.' : 'Account updated.');
+      return loadAdminUsers();
+    }).catch(function (err) {
+      showToast(err.message, 'error');
     }).then(function () {
       setButtonBusy(button, false);
     });
@@ -785,11 +915,11 @@
     head.className = 'summary-week-head';
     head.innerHTML =
       '<div><strong></strong><span class="summary-week-range"></span></div>' +
-      '<div class="summary-week-stats"><span></span><span></span><i class="fa-solid fa-chevron-down"></i></div>';
+      '<div class="summary-week-stats"><span></span><span></span>' + iconSvg('chevron-down') + '</div>';
     head.querySelector('strong').textContent = 'Week ' + week.weekNumber;
     head.querySelector('.summary-week-range').textContent = week.rangeShort;
     var stats = head.querySelectorAll('.summary-week-stats span');
-    stats[0].textContent = week.daysLogged + ' / 5 days';
+    stats[0].textContent = week.daysLogged + ' / 7 days';
     stats[1].textContent = week.totalHours + ' hrs';
     var body = document.createElement('div');
     body.className = 'summary-week-body';
@@ -904,7 +1034,7 @@
     $('task-priority').value = 'medium';
     $('task-due').value = '';
     $('task-form-title').textContent = 'Add a task';
-    $('btn-add-task').innerHTML = '<i class="fa-solid fa-plus"></i><span>Add task</span>';
+    $('btn-add-task').innerHTML = iconSvg('plus') + '<span>Add task</span>';
     $('btn-add-task').removeAttribute('data-idle-html');
     $('btn-cancel-edit').classList.add('d-none');
   }
@@ -917,7 +1047,7 @@
     $('task-priority').value = task.priority || 'medium';
     $('task-due').value = task.dueDate || '';
     $('task-form-title').textContent = 'Edit task';
-    $('btn-add-task').innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Save changes</span>';
+    $('btn-add-task').innerHTML = iconSvg('save') + '<span>Save changes</span>';
     $('btn-add-task').removeAttribute('data-idle-html');
     $('btn-cancel-edit').classList.remove('d-none');
     $('task-title').focus();
@@ -940,7 +1070,7 @@
     var delSub = document.createElement('button');
     delSub.type = 'button';
     delSub.className = 'subtask-delete';
-    delSub.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    delSub.innerHTML = iconSvg('x');
     delSub.setAttribute('aria-label', 'Delete subtask');
     delSub.addEventListener('click', function (event) {
       event.preventDefault();
@@ -1028,7 +1158,7 @@
     var editTask = document.createElement('button');
     editTask.type = 'button';
     editTask.className = 'btn-custom btn-custom-sm btn-custom-light';
-    editTask.innerHTML = '<i class="fa-solid fa-pen"></i>';
+    editTask.innerHTML = iconSvg('pen');
     editTask.setAttribute('aria-label', 'Edit task');
     editTask.addEventListener('click', function () {
       startEditTask(task);
@@ -1036,7 +1166,7 @@
     var delTask = document.createElement('button');
     delTask.type = 'button';
     delTask.className = 'btn-custom btn-custom-sm btn-custom-light';
-    delTask.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    delTask.innerHTML = iconSvg('trash');
     delTask.setAttribute('aria-label', 'Delete task');
     delTask.addEventListener('click', function () {
       setButtonBusy(delTask, true, 'Deleting…');
@@ -1078,7 +1208,7 @@
     var addBtn = document.createElement('button');
     addBtn.type = 'submit';
     addBtn.className = 'btn-custom btn-custom-sm btn-custom-primary';
-    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Add</span>';
+    addBtn.innerHTML = iconSvg('plus') + '<span>Add</span>';
     addRow.appendChild(input);
     addRow.appendChild(addBtn);
     addRow.addEventListener('submit', function (event) {
@@ -1211,6 +1341,7 @@
     showView('app');
     showPanel('diary');
     return loadDay().then(function (result) {
+      loadReportSetup();
       maybeShowTaskAlerts();
       return result;
     });
@@ -1270,8 +1401,22 @@
         localStorage.setItem(EMAIL_KEY, $('register-email').value.trim().toLowerCase());
         $('login-email').value = $('register-email').value.trim();
         $('remember-me').checked = true;
+        if (result.pending) {
+          setRegisterError('');
+          $('register-alert').classList.remove('d-none', 'alert-custom-danger');
+          $('register-alert').classList.add('alert-custom-success');
+          $('register-alert-text').textContent = result.message || 'Account created. Wait for admin approval, then sign in.';
+          showAuthMode('login');
+          setLoginError('');
+          $('login-alert').classList.remove('d-none', 'alert-custom-danger');
+          $('login-alert').classList.add('alert-custom-success');
+          $('login-alert-text').textContent = result.message || 'Account created. Wait for admin approval, then sign in.';
+          return null;
+        }
         return enterApp(result.token, result.profile);
       }).catch(function (err) {
+        $('register-alert').classList.remove('alert-custom-success');
+        $('register-alert').classList.add('alert-custom-danger');
         setRegisterError(err.message);
       }).then(function () {
         setButtonBusy(button, false);
@@ -1319,7 +1464,16 @@
     $('btn-save-next').addEventListener('click', function () {
       saveDay(this, true);
     });
-    $('btn-export').addEventListener('click', downloadExcel);
+    $('btn-send-week').addEventListener('click', function () {
+      sendWeekToSheet(this);
+    });
+    $('btn-send-week-summary').addEventListener('click', function () {
+      sendWeekToSheet(this);
+    });
+    $('report-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      connectReportSheet($('btn-connect-sheet'));
+    });
     $('btn-logout').addEventListener('click', function () {
       api('logout', { token: state.token }).catch(function () { return null; }).then(expireSession);
     });
@@ -1371,6 +1525,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     bindChrome();
+    fillIcons();
     showAuthMode('login');
     var remembered = localStorage.getItem(EMAIL_KEY) ||
       localStorage.getItem('kenyaDiaryEmail') ||

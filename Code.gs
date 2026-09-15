@@ -19,8 +19,11 @@ function migrateSchema_() {
   try {
     var ss = getDiarySpreadsheet_();
     ss.setSpreadsheetTimeZone(APP_TIMEZONE);
-    ensureAllSheets_(ss);
+    ensureDiaryAndTaskSheets_(ss);
+    ensureAdminUsersSheet_();
+    migrateUsersFromDiarySpreadsheet_(ss);
     migrateLegacyIntern_();
+    promoteAdminUsers_();
   } catch (err) {
     // Spreadsheet may not exist yet; setupInitialize will create it.
   }
@@ -52,12 +55,24 @@ function api(action, payload) {
       case 'saveEntry':
         profile = requireSession_(payload.token);
         return saveEntry_(payload.entry, profile);
-      case 'exportExcel':
-        profile = requireSession_(payload.token);
-        return exportWeekExcel_(payload.weekStart, profile);
       case 'getSummary':
         profile = requireSession_(payload.token);
         return getSummary_(profile);
+      case 'getReportSetup':
+        profile = requireSession_(payload.token);
+        return getReportSetup_(profile);
+      case 'connectReportSheet':
+        profile = requireSession_(payload.token);
+        return connectReportSheet_(profile, payload.spreadsheet);
+      case 'sendWeekReport':
+        profile = requireSession_(payload.token);
+        return sendWeekReport_(profile, payload.weekStart);
+      case 'listUsers':
+        profile = requireSession_(payload.token);
+        return listUsers_(profile);
+      case 'setUserStatus':
+        profile = requireSession_(payload.token);
+        return setUserStatus_(profile, payload.userId, payload.status);
       case 'listTasks':
         profile = requireSession_(payload.token);
         return listTasks_(profile);

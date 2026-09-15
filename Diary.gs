@@ -1,5 +1,5 @@
 /**
- * Monday–Friday diary load/save, Nairobi hours, and Excel export.
+ * Daily diary load/save, Nairobi hours, and week reports to a Google Sheet.
  */
 
 var WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -61,7 +61,7 @@ function weekNumber_(mondayStr, programmeStart) {
 
 function formatShortRange_(mondayStr) {
   var start = parseYmd_(mondayStr);
-  var end = parseYmd_(addDays_(mondayStr, 4));
+  var end = parseYmd_(addDays_(mondayStr, DAYS_IN_WEEK - 1));
   if (start.getUTCMonth() === end.getUTCMonth()) {
     return start.getUTCDate() + '–' + end.getUTCDate() + ' ' + SHORT_MONTHS[end.getUTCMonth()];
   }
@@ -129,42 +129,17 @@ function isMorningTime_(hhmm) {
   return Number(String(hhmm).split(':')[0]) < 12;
 }
 
-function previousWeekday_(dateStr) {
-  var prev = addDays_(dateStr, -1);
-  var name = weekdayName_(prev);
-  if (name === 'Sunday') {
-    return addDays_(prev, -2);
-  }
-  if (name === 'Saturday') {
-    return addDays_(prev, -1);
-  }
-  return prev;
+function previousDay_(dateStr) {
+  return addDays_(dateStr, -1);
 }
 
-function nextWeekday_(dateStr) {
-  var next = addDays_(dateStr, 1);
-  var name = weekdayName_(next);
-  if (name === 'Saturday') {
-    return addDays_(next, 2);
-  }
-  if (name === 'Sunday') {
-    return addDays_(next, 1);
-  }
-  return next;
+function nextDay_(dateStr) {
+  return addDays_(dateStr, 1);
 }
 
-function snapToWeekday_(dateStr, programmeStart) {
+function snapToDiaryDate_(dateStr, programmeStart) {
   var date = String(dateStr || todayNairobi_());
   var start = programmeStart || getProgrammeStart_();
-  if (date < start) {
-    date = start;
-  }
-  var name = weekdayName_(date);
-  if (name === 'Saturday') {
-    date = addDays_(date, -1);
-  } else if (name === 'Sunday') {
-    date = addDays_(date, 1);
-  }
   if (date < start) {
     date = start;
   }
@@ -245,7 +220,7 @@ function getWeek_(weekStart, profile) {
   var daysLogged = 0;
   var totalHours = 0;
 
-  for (var offset = 0; offset < 5; offset++) {
+  for (var offset = 0; offset < DAYS_IN_WEEK; offset++) {
     var date = addDays_(monday, offset);
     var day = buildWeekDay_(date, map[date]);
     if (day.saved) {
@@ -258,7 +233,7 @@ function getWeek_(weekStart, profile) {
   return {
     ok: true,
     weekStart: monday,
-    weekEnd: addDays_(monday, 4),
+    weekEnd: addDays_(monday, DAYS_IN_WEEK - 1),
     weekNumber: weekNumber_(monday, programmeStart),
     weekLabel: weekTitle_(monday, programmeStart),
     weekRangeShort: formatShortRange_(monday),
@@ -275,7 +250,7 @@ function getWeek_(weekStart, profile) {
 
 function getDay_(dateStr, profile) {
   var programmeStart = programmeStartOf_(profile);
-  var date = snapToWeekday_(dateStr, programmeStart);
+  var date = snapToDiaryDate_(dateStr, programmeStart);
   var week = getWeek_(mondayOf_(date), profile);
   var existing = null;
   week.days.forEach(function (day) {
@@ -283,7 +258,7 @@ function getDay_(dateStr, profile) {
       existing = day;
     }
   });
-  var prev = previousWeekday_(date);
+  var prev = previousDay_(date);
   return {
     ok: true,
     date: date,
@@ -338,7 +313,7 @@ function getSummary_(profile) {
     var daysLogged = 0;
     var hours = 0;
     var days = [];
-    for (var offset = 0; offset < 5; offset++) {
+    for (var offset = 0; offset < DAYS_IN_WEEK; offset++) {
       var date = addDays_(monday, offset);
       var day = buildWeekDay_(date, map[date]);
       if (day.saved) {
@@ -352,7 +327,7 @@ function getSummary_(profile) {
     weeks.push({
       weekNumber: weekNumber_(monday, programmeStart),
       weekStart: monday,
-      weekEnd: addDays_(monday, 4),
+      weekEnd: addDays_(monday, DAYS_IN_WEEK - 1),
       rangeShort: formatShortRange_(monday),
       daysLogged: daysLogged,
       totalHours: hours.toFixed(2),
@@ -381,9 +356,6 @@ function saveEntry_(entry, profile) {
   parseYmd_(date);
 
   var weekday = weekdayName_(date);
-  if (weekday === 'Saturday' || weekday === 'Sunday') {
-    throw new Error('Diary entries are Monday to Friday only.');
-  }
   var programmeStart = programmeStartOf_(profile);
   if (date < programmeStart) {
     throw new Error('Cannot save a day before the programme start date.');
@@ -436,27 +408,14 @@ function saveEntry_(entry, profile) {
   };
 }
 
-function exportSpreadsheetXlsx_(spreadsheetId) {
-  var url = 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/export?format=xlsx';
-  var response = UrlFetchApp.fetch(url, {
-    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
-    muteHttpExceptions: true,
-    followRedirects: true
-  });
-  if (response.getResponseCode() !== 200) {
-    throw new Error('Excel export failed. Re-authorize the script and try again.');
-  }
-  return response.getBlob();
-}
-
-function exportWeekExcel_(weekStart, profile) {
-  var week = getWeek_(weekStart, profile);
+function writeWeekReport_(dest, week, profile) {
   var organisation = organisationOf_(profile);
-  var temp = SpreadsheetApp.create('Daily Diary Export ' + week.weekStart);
-  temp.setSpreadsheetTimeZone(getTimezone_());
-  var sheet = temp.getSheets()[0];
-  sheet.setName(week.weekLabel);
-
+  var tabName = String(week.weekLabel || 'Week').replace(/[\\/?*\[\]:]/g, ' ').slice(0, 90);
+  var sheet = dest.getSheetByName(tabName);
+  if (!sheet) {
+    sheet = dest.insertSheet(tabName);
+  }
+  sheet.clear();
   sheet.getRange('A1:G1').merge().setValue(organisation);
   sheet.getRange('A2:G2').merge().setValue('Internship Daily Diary');
   sheet.getRange('A3:G3').merge().setValue('Intern: ' + (profile.name || ''));
@@ -489,8 +448,9 @@ function exportWeekExcel_(weekStart, profile) {
   sheet.getRange(9, 1, body.length, headers.length).setValues(body);
   sheet.getRange(9, 5, body.length, 1).setWrap(true);
 
-  sheet.getRange(15, 5).setValue('Weekly total hours').setFontWeight('bold');
-  sheet.getRange(15, 6).setValue(week.stats.totalHours).setFontWeight('bold').setBackground('#B4F105');
+  var totalRow = 9 + body.length + 1;
+  sheet.getRange(totalRow, 5).setValue('Weekly total hours').setFontWeight('bold');
+  sheet.getRange(totalRow, 6).setValue(week.stats.totalHours).setFontWeight('bold').setBackground('#B4F105');
 
   sheet.setColumnWidth(1, 130);
   sheet.setColumnWidth(2, 120);
@@ -500,19 +460,5 @@ function exportWeekExcel_(weekStart, profile) {
   sheet.setColumnWidth(6, 130);
   sheet.setColumnWidth(7, 200);
   sheet.setFrozenRows(8);
-
   SpreadsheetApp.flush();
-  var blob;
-  try {
-    blob = exportSpreadsheetXlsx_(temp.getId());
-  } finally {
-    DriveApp.getFileById(temp.getId()).setTrashed(true);
-  }
-
-  return {
-    ok: true,
-    filename: orgSlug_(organisation) + '-Daily-Diary-Week-' + week.weekNumber + '.xlsx',
-    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    base64: Utilities.base64Encode(blob.getBytes())
-  };
 }
