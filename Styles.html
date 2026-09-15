@@ -633,6 +633,8 @@ a:hover { color: var(--brand-lime-hover); }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
 }
 
 .alert-green-bg-shape {
@@ -642,7 +644,8 @@ a:hover { color: var(--brand-lime-hover); }
   width: 120px;
   height: 120px;
   pointer-events: none;
-  transform: rotate(15deg);
+  transform-origin: center;
+  animation: rotateLogo 18s linear infinite;
 }
 
 .alert-green-badge {
@@ -785,6 +788,11 @@ select.form-control-custom {
   color: var(--brand-forest-dark);
 }
 
+.week-dot:hover {
+  border-color: var(--brand-forest-medium);
+  color: var(--brand-forest-dark);
+}
+
 .day-card { height: auto; }
 
 .day-times {
@@ -842,6 +850,10 @@ select.form-control-custom {
   color: var(--brand-forest-dark);
   font-weight: 800;
   cursor: pointer;
+}
+
+.clock-step-btn:hover {
+  background: var(--brand-lime);
 }
 
 .clock-hour-label { font-weight: 800; min-width: 72px; text-align: center; }
@@ -1259,12 +1271,6 @@ select.form-control-custom {
 .navbar-profile-btn:hover,
 .sidebar-toggle-btn:hover,
 .password-toggle-btn:hover,
-.week-dot:hover,
-.clock-step-btn:hover,
-.clock-minute:hover,
-.clock-period:hover,
-.clock-leave:hover,
-.summary-day-open:hover,
 .auth-switch button:hover {
   background-color: transparent !important;
   color: var(--brand-forest-medium);
@@ -1603,6 +1609,8 @@ select.form-control-custom {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.z-index-2 { z-index: 2; position: relative; }
 
 @keyframes redPulse {
   0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
