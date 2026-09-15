@@ -21,7 +21,8 @@
     taskFilter: 'all',
     taskToday: '',
     editingTaskId: '',
-    report: null
+    report: null,
+    adminUsers: []
   };
 
   var ICONS = {
@@ -767,13 +768,14 @@
     if (result.ownerEmail) {
       $('report-owner-email').textContent = result.ownerEmail;
     }
-    if (result.connected) {
-      $('report-status').textContent = 'Connected to “' + (result.spreadsheetTitle || 'your sheet') + '”. Send a week whenever you want.';
-      $('report-steps').classList.add('d-none');
-      $('report-url').placeholder = 'Paste a new URL to reconnect';
+    var connected = !!result.connected;
+    $('report-steps').classList.toggle('d-none', connected);
+    $('report-form').classList.toggle('d-none', connected);
+    if (connected) {
+      $('report-status').textContent = 'Connected to “' + (result.spreadsheetTitle || 'your sheet') +
+        '”. This sheet receives all weeks. Ask an admin if you need to connect a different one.';
     } else {
-      $('report-status').textContent = 'Connect your own Google Sheet to receive each week’s summary.';
-      $('report-steps').classList.remove('d-none');
+      $('report-status').textContent = 'Connect your own Google Sheet once. It will hold every week’s records.';
     }
   }
 
@@ -804,16 +806,19 @@
     });
   }
 
-  function sendWeekToSheet(button) {
+  function sendRecordsToSheet(button) {
     if (state.report && !state.report.connected) {
       showToast('Connect your Google Sheet first. The steps are on the dashboard.', 'error');
       showPanel('diary');
-      $('report-url').focus();
+      if (!$('report-form').classList.contains('d-none')) {
+        $('report-url').focus();
+      }
       return Promise.resolve();
     }
     setButtonBusy(button, true, 'Sending…');
-    return api('sendWeekReport', { token: state.token, weekStart: state.weekStart }).then(function (result) {
-      showToast((result.weekLabel || 'Week') + ' sent to your Google Sheet.');
+    return api('sendWeekReport', { token: state.token }).then(function (result) {
+      var count = result.weekCount || 0;
+      showToast(count === 1 ? '1 week sent to your Google Sheet.' : count + ' weeks sent to your Google Sheet.');
     }).catch(function (err) {
       showToast(err.message, 'error');
       if (/connect/i.test(err.message)) {
@@ -824,46 +829,57 @@
     });
   }
 
+  function adminActionButton(label, className, onClick) {
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn-custom btn-custom-sm ' + className;
+    button.textContent = label;
+    button.addEventListener('click', function () {
+      onClick(button);
+    });
+    return button;
+  }
+
   function loadAdminUsers() {
     return api('listUsers', { token: state.token }).then(function (result) {
       var body = $('admin-users-body');
       body.innerHTML = '';
-      if (!result.users.length) {
+      state.adminUsers = result.users || [];
+      if (!state.adminUsers.length) {
         var empty = document.createElement('tr');
-        empty.innerHTML = '<td colspan="5">No accounts yet.</td>';
+        empty.innerHTML = '<td colspan="6">No accounts yet.</td>';
         body.appendChild(empty);
         return;
       }
-      result.users.forEach(function (user) {
+      state.adminUsers.forEach(function (user) {
         var tr = document.createElement('tr');
-        tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td>';
+        tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td>';
         tr.cells[0].textContent = user.name;
         tr.cells[1].textContent = user.email;
         tr.cells[2].textContent = user.organisation;
         tr.cells[3].textContent = user.role === 'admin' ? 'admin · ' + user.status : user.status;
+        tr.cells[4].textContent = user.reportSpreadsheetId ? 'Connected' : '—';
         var actions = document.createElement('div');
         actions.className = 'admin-actions';
         if (user.status !== 'approved') {
-          var approve = document.createElement('button');
-          approve.type = 'button';
-          approve.className = 'btn-custom btn-custom-sm btn-custom-primary';
-          approve.textContent = 'Approve';
-          approve.addEventListener('click', function () {
-            setUserStatus(user.id, 'approved', approve);
-          });
-          actions.appendChild(approve);
+          actions.appendChild(adminActionButton('Approve', 'btn-custom-primary', function (button) {
+            setUserStatus(user.id, 'approved', button);
+          }));
         }
-        if (user.status !== 'disabled' && user.role !== 'admin') {
-          var disable = document.createElement('button');
-          disable.type = 'button';
-          disable.className = 'btn-custom btn-custom-sm btn-custom-light';
-          disable.textContent = 'Disable';
-          disable.addEventListener('click', function () {
-            setUserStatus(user.id, 'disabled', disable);
-          });
-          actions.appendChild(disable);
+        actions.appendChild(adminActionButton('Edit', 'btn-custom-light', function () {
+          openUserEditModal(user);
+        }));
+        if (user.reportSpreadsheetId) {
+          actions.appendChild(adminActionButton('Disconnect sheet', 'btn-custom-light', function (button) {
+            disconnectUserSheet(user, button);
+          }));
         }
-        tr.cells[4].appendChild(actions);
+        if (user.id !== (state.profile && state.profile.userId)) {
+          actions.appendChild(adminActionButton('Delete', 'btn-custom-light', function (button) {
+            deleteUserAccount(user, button);
+          }));
+        }
+        tr.cells[5].appendChild(actions);
         body.appendChild(tr);
       });
     }).catch(function (err) {
@@ -875,6 +891,76 @@
     setButtonBusy(button, true, 'Saving…');
     api('setUserStatus', { token: state.token, userId: userId, status: status }).then(function () {
       showToast(status === 'approved' ? 'Account approved.' : 'Account updated.');
+      return loadAdminUsers();
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function openUserEditModal(user) {
+    $('edit-user-id').value = user.id;
+    $('edit-user-name').value = user.name || '';
+    $('edit-user-email').value = user.email || '';
+    $('edit-user-org').value = user.organisation || '';
+    $('edit-user-start').value = user.programmeStart || '';
+    $('edit-user-role').value = user.role === 'admin' ? 'admin' : 'user';
+    $('edit-user-status').value = user.status || 'approved';
+    $('user-edit-modal').classList.remove('d-none');
+    fillIcons($('user-edit-modal'));
+  }
+
+  function hideUserEditModal() {
+    $('user-edit-modal').classList.add('d-none');
+  }
+
+  function saveUserEdit(button) {
+    setButtonBusy(button, true, 'Saving…');
+    return api('updateUser', {
+      token: state.token,
+      user: {
+        userId: $('edit-user-id').value,
+        name: $('edit-user-name').value,
+        email: $('edit-user-email').value,
+        organisation: $('edit-user-org').value,
+        programmeStart: $('edit-user-start').value,
+        role: $('edit-user-role').value,
+        status: $('edit-user-status').value
+      }
+    }).then(function () {
+      hideUserEditModal();
+      showToast('Account updated.');
+      return loadAdminUsers();
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function disconnectUserSheet(user, button) {
+    if (!window.confirm('Disconnect the report sheet for ' + user.name + '? They will need to connect a new sheet.')) {
+      return;
+    }
+    setButtonBusy(button, true, 'Saving…');
+    api('disconnectReportSheet', { token: state.token, userId: user.id }).then(function () {
+      showToast('Sheet disconnected.');
+      return loadAdminUsers();
+    }).catch(function (err) {
+      showToast(err.message, 'error');
+    }).then(function () {
+      setButtonBusy(button, false);
+    });
+  }
+
+  function deleteUserAccount(user, button) {
+    if (!window.confirm('Delete ' + user.name + ' and their diary and tasks? This cannot be undone.')) {
+      return;
+    }
+    setButtonBusy(button, true, 'Deleting…');
+    api('deleteUser', { token: state.token, userId: user.id }).then(function () {
+      showToast('Account deleted.');
       return loadAdminUsers();
     }).catch(function (err) {
       showToast(err.message, 'error');
@@ -1465,10 +1551,10 @@
       saveDay(this, true);
     });
     $('btn-send-week').addEventListener('click', function () {
-      sendWeekToSheet(this);
+      sendRecordsToSheet(this);
     });
     $('btn-send-week-summary').addEventListener('click', function () {
-      sendWeekToSheet(this);
+      sendRecordsToSheet(this);
     });
     $('report-form').addEventListener('submit', function (event) {
       event.preventDefault();
@@ -1495,6 +1581,11 @@
     $('btn-alert-tasks').addEventListener('click', function () {
       hideTaskAlertModal();
       showPanel('tasks');
+    });
+    $('btn-user-edit-cancel').addEventListener('click', hideUserEditModal);
+    $('user-edit-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      saveUserEdit($('btn-user-edit-save'));
     });
 
     $('task-form').addEventListener('submit', function (event) {

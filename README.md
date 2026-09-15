@@ -1,6 +1,6 @@
 # Daily Diary
 
-Web-based internship diary. People create an account with an organisation name; an **admin approves** them before they can sign in. They record **any working day**, track tasks, and send each week’s summary to **their own Google Sheet**.
+Web-based internship diary. People create an account with an organisation name; an **admin approves** them before they can sign in. They record **any working day**, track tasks, and send **all weeks** to **one Google Sheet** they connect once.
 
 | Layer | Stack |
 | --- | --- |
@@ -68,12 +68,12 @@ Use [INVITE.md](INVITE.md) when you invite someone. Put the `/exec` URL at the t
 - Create an account (pending until an admin approves it)
 - Sign in after approval; organisation name is branding only
 - Log **any day** from the programme start date (including weekends)
-- Week view is Monday–Sunday; send that week to a connected Google Sheet
-- Connect a sheet by sharing it as Editor with the app owner email, then pasting the URL
+- Week view is Monday–Sunday; **Send records to my sheet** writes every week into the connected Google Sheet
+- Connect a sheet once by sharing it as Editor with the app owner email, then pasting the URL (changing it later needs an admin)
 - Open **Summary** for every logged day plus task counts
 - Open **Tasks** to add, edit, tag priority, and set due dates
 - After sign-in, a popup lists urgent or due-soon tasks
-- Admins open **Admin** to approve or disable accounts
+- Admins open **User management** to approve, edit, or delete accounts, and to disconnect a report sheet
 
 Each account only sees its own diary and tasks. Sessions last up to 6 hours.
 

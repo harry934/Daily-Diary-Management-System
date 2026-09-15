@@ -105,12 +105,15 @@ function getReportSetup_(profile) {
 }
 
 function connectReportSheet_(profile, raw) {
-  var id = parseSpreadsheetId_(raw);
-  var ss = openSharedSpreadsheet_(id);
   var user = findUserById_(profile.userId);
   if (!user) {
     throw new Error('Account not found.');
   }
+  if (user.reportSpreadsheetId) {
+    throw new Error('Your Google Sheet is already connected. Ask an admin to disconnect it if you need a different sheet.');
+  }
+  var id = parseSpreadsheetId_(raw);
+  var ss = openSharedSpreadsheet_(id);
   user.reportSpreadsheetId = id;
   writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
   return {
@@ -122,19 +125,121 @@ function connectReportSheet_(profile, raw) {
   };
 }
 
-function sendWeekReport_(profile, weekStart) {
+function sendWeekReport_(profile) {
   var user = findUserById_(profile.userId);
   if (!user || !user.reportSpreadsheetId) {
-    throw new Error('Connect your Google Sheet first, then send the week.');
+    throw new Error('Connect your Google Sheet first, then send your records.');
   }
   var dest = openSharedSpreadsheet_(user.reportSpreadsheetId);
-  var week = getWeek_(weekStart, profile);
-  writeWeekReport_(dest, week, profile);
+  var summary = getSummary_(profile);
+  var weeks = summary.weeks || [];
+  weeks.forEach(function (week) {
+    writeWeekReport_(dest, {
+      weekLabel: 'Week ' + week.weekNumber,
+      weekRangeShort: week.rangeShort,
+      days: week.days,
+      stats: {
+        daysLogged: week.daysLogged,
+        totalHours: week.totalHours
+      }
+    }, profile);
+  });
   return {
     ok: true,
     spreadsheetId: user.reportSpreadsheetId,
     spreadsheetTitle: dest.getName(),
-    weekLabel: week.weekLabel,
+    weekCount: weeks.length,
     url: dest.getUrl()
   };
+}
+
+function countApprovedAdmins_() {
+  var count = 0;
+  readRecords_(getUsersSheet_(), USERS_HEADERS).forEach(function (row) {
+    var user = hydrateUser_(row);
+    if (user.role === 'admin' && user.status === 'approved') {
+      count += 1;
+    }
+  });
+  return count;
+}
+
+function disconnectReportSheet_(profile, userId) {
+  requireAdmin_(profile);
+  var user = findUserById_(userId);
+  if (!user) {
+    throw new Error('User not found.');
+  }
+  user.reportSpreadsheetId = '';
+  writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
+  return listUsers_(profile);
+}
+
+function updateUser_(profile, payload) {
+  requireAdmin_(profile);
+  payload = payload || {};
+  var user = findUserById_(payload.userId);
+  if (!user) {
+    throw new Error('User not found.');
+  }
+
+  var email = sanitizeEmail_(payload.email);
+  var name = sanitizePersonName_(payload.name, 'full name');
+  var organisation = sanitizeOrganisation_(payload.organisation);
+  var programmeStart = sanitizeProgrammeStart_(payload.programmeStart);
+  var role = String(payload.role || user.role || 'user').toLowerCase() === 'admin' ? 'admin' : 'user';
+  var status = String(payload.status || user.status || 'approved').toLowerCase();
+  if (status !== 'pending' && status !== 'disabled' && status !== 'approved') {
+    throw new Error('Unknown account status.');
+  }
+
+  var editingSelf = user.id === profile.userId;
+  if (editingSelf && (role !== 'admin' || status !== 'approved')) {
+    throw new Error('You cannot demote or disable your own admin account.');
+  }
+  if (isAdminEmail_(user.email) && role !== 'admin') {
+    throw new Error('This account is the configured admin and cannot be demoted.');
+  }
+  if (user.role === 'admin' && role !== 'admin' && countApprovedAdmins_() <= 1) {
+    throw new Error('Keep at least one approved admin account.');
+  }
+  if (role === 'admin') {
+    status = 'approved';
+  }
+
+  var existing = findUserByEmail_(email);
+  if (existing && existing.id !== user.id) {
+    throw new Error('Another account already uses that email.');
+  }
+
+  user.email = email;
+  user.name = name;
+  user.organisation = organisation;
+  user.programmeStart = programmeStart;
+  user.role = role;
+  user.status = status;
+  writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
+  return listUsers_(profile);
+}
+
+function deleteUser_(profile, userId) {
+  requireAdmin_(profile);
+  var user = findUserById_(userId);
+  if (!user) {
+    throw new Error('User not found.');
+  }
+  if (user.id === profile.userId) {
+    throw new Error('You cannot delete your own admin account.');
+  }
+  if (isAdminEmail_(user.email)) {
+    throw new Error('This account is the configured admin and cannot be deleted.');
+  }
+  if (user.role === 'admin' && countApprovedAdmins_() <= 1) {
+    throw new Error('Keep at least one approved admin account.');
+  }
+  deleteRecordsForUser_(getDiarySheet_(), DIARY_HEADERS, user.id);
+  deleteRecordsForUser_(getTasksSheet_(), TASKS_HEADERS, user.id);
+  deleteRecordsForUser_(getSubtasksSheet_(), SUBTASKS_HEADERS, user.id);
+  deleteSheetRow_(getUsersSheet_(), user._rowIndex);
+  return listUsers_(profile);
 }

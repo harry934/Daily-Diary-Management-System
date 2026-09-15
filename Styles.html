@@ -17,11 +17,11 @@
   --sys-green: #22C55E;
   --sys-red: #EF4444;
   --sidebar-width: 280px;
-  --radius-xxl: 0;
-  --radius-xl: 0;
-  --radius-lg: 0;
-  --radius-md: 0;
-  --radius-sm: 0;
+  --radius-xxl: 24px;
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
   --shadow-sm: 0 2px 8px rgba(11, 19, 15, 0.02);
   --shadow-md: 0 10px 30px rgba(11, 19, 15, 0.04);
   --shadow-lg: 0 20px 50px rgba(11, 19, 15, 0.08);
@@ -59,7 +59,7 @@ a:hover { color: var(--brand-lime-hover); }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 0; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: var(--radius-sm); }
 
 .boot-screen {
   min-height: 100%;
@@ -547,7 +547,7 @@ a:hover { color: var(--brand-lime-hover); }
   gap: 0.65rem;
   background: #FFFFFF;
   border: 1px solid var(--border-light);
-  border-radius: 0;
+  border-radius: var(--radius-lg);
   padding: 0.35rem;
   box-shadow: var(--shadow-sm);
 }
@@ -636,7 +636,7 @@ a:hover { color: var(--brand-lime-hover); }
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.35rem 0.75rem;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   margin-bottom: 1.25rem;
 }
 
@@ -645,7 +645,7 @@ a:hover { color: var(--brand-lime-hover); }
   width: 6px;
   height: 6px;
   background-color: var(--sys-red);
-  border-radius: 0;
+  border-radius: 50%;
   animation: redPulse 2s infinite;
 }
 
@@ -749,7 +749,7 @@ select.form-control-custom {
 .week-dot {
   border: 1px solid rgba(11, 19, 15, 0.1);
   background: #FFFFFF;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   padding: 0.4rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 800;
@@ -840,7 +840,7 @@ select.form-control-custom {
 .clock-period {
   border: 1px solid rgba(11, 19, 15, 0.08);
   background: #FFFFFF;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   min-width: 44px;
   padding: 0.3rem 0.55rem;
   font-size: 0.75rem;
@@ -871,7 +871,7 @@ select.form-control-custom {
 .clock-leave {
   border: 1px dashed rgba(11, 19, 15, 0.18);
   background: transparent;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   padding: 0.3rem 0.7rem;
   font-size: 0.72rem;
   font-weight: 700;
@@ -969,7 +969,7 @@ select.form-control-custom {
 .time-chip {
   border: 1px solid rgba(11, 19, 15, 0.08);
   background: #F8FAF9;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   min-width: 38px;
   padding: 0.3rem 0.55rem;
   font-size: 0.75rem;
@@ -1031,7 +1031,7 @@ select.form-control-custom {
   border: 1px solid var(--border-light);
   background: #FFFFFF;
   color: var(--text-muted-green);
-  border-radius: 0;
+  border-radius: var(--radius-md);
   padding: 0.35rem 0.85rem;
   font-size: 0.8rem;
   font-weight: 800;
@@ -1067,7 +1067,7 @@ select.form-control-custom {
   display: inline-flex;
   align-items: center;
   padding: 0.15rem 0.55rem;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -1468,9 +1468,10 @@ select.form-control-custom {
   margin-bottom: 1rem;
 }
 
-.alert-modal-head i {
+.alert-modal-head .icon {
   color: #C2410C;
-  font-size: 1.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
   margin-top: 0.15rem;
 }
 
@@ -1561,6 +1562,18 @@ select.form-control-custom {
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.user-edit-card { max-width: 520px; }
+
+.user-edit-form {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.user-edit-form .alert-modal-actions {
+  margin-top: 0.75rem;
 }
 
 .alert-custom-success {

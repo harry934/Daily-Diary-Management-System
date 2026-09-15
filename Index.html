@@ -153,7 +153,7 @@
             <li class="sidebar-menu-item d-none" id="nav-admin-item">
               <a href="#admin" class="sidebar-menu-link" data-panel="admin" id="nav-admin">
                 <span data-icon="users"></span>
-                <span>Admin</span>
+                <span>User management</span>
               </a>
             </li>
           </ul>
@@ -182,7 +182,7 @@
         <div class="navbar-actions">
           <button type="button" class="btn-custom btn-custom-secondary" id="btn-send-week">
             <span data-icon="sheet"></span>
-            <span>Send week to my sheet</span>
+            <span>Send records to my sheet</span>
           </button>
           <div class="dropdown">
             <button class="navbar-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="profile-dropdown">
@@ -251,14 +251,14 @@
 
         <div class="card report-card" id="report-card">
           <div class="card-header">
-            <h2 class="card-title">Week report sheet</h2>
+            <h2 class="card-title">Report spreadsheet</h2>
           </div>
-          <p id="report-status">Connect your own Google Sheet to receive each week’s summary.</p>
+          <p id="report-status">Connect your own Google Sheet once. It will hold every week’s records.</p>
           <ol class="report-steps" id="report-steps">
             <li>Create a Google Sheet.</li>
             <li>Share it as <strong>Editor</strong> with <code id="report-owner-email">the app owner</code>.</li>
             <li>Copy the sheet URL from the address bar.</li>
-            <li>Paste it below and connect.</li>
+            <li>Paste it below and connect. You only do this once.</li>
           </ol>
           <form id="report-form" class="report-form">
             <input type="url" id="report-url" class="form-control-custom" placeholder="https://docs.google.com/spreadsheets/d/...">
@@ -312,7 +312,7 @@
           </div>
           <button type="button" class="btn-custom btn-custom-secondary" id="btn-send-week-summary">
             <span data-icon="sheet"></span>
-            <span>Send this week</span>
+            <span>Send records to my sheet</span>
           </button>
         </div>
         <div class="row g-4 mb-4">
@@ -385,8 +385,8 @@
       <section class="app-panel d-none" id="panel-admin">
         <div class="page-header">
           <div>
-            <h1 class="page-title">User accounts</h1>
-            <p class="page-subtitle">Approve people before they can use the diary</p>
+            <h1 class="page-title">User management</h1>
+            <p class="page-subtitle">Approve, edit, or delete accounts. Disconnect a sheet if someone needs to connect a new one.</p>
           </div>
         </div>
         <div class="card table-card">
@@ -398,6 +398,7 @@
                   <th>Email</th>
                   <th>Organisation</th>
                   <th>Status</th>
+                  <th>Sheet</th>
                   <th></th>
                 </tr>
               </thead>
@@ -434,6 +435,44 @@
         <button type="button" class="btn-custom btn-custom-light" id="btn-alert-dismiss">Dismiss</button>
         <button type="button" class="btn-custom btn-custom-primary" id="btn-alert-tasks">Open tasks</button>
       </div>
+    </div>
+  </div>
+
+  <div id="user-edit-modal" class="alert-modal d-none" role="dialog" aria-modal="true" aria-labelledby="user-edit-title">
+    <div class="alert-modal-card user-edit-card">
+      <div class="alert-modal-head">
+        <span data-icon="pen"></span>
+        <div>
+          <h2 id="user-edit-title">Edit account</h2>
+          <p>Change this person’s details, role, or status.</p>
+        </div>
+      </div>
+      <form id="user-edit-form" class="user-edit-form">
+        <input type="hidden" id="edit-user-id" value="">
+        <label class="form-label-custom" for="edit-user-name">Full name</label>
+        <input type="text" id="edit-user-name" class="form-control-custom" maxlength="80" required>
+        <label class="form-label-custom" for="edit-user-email">Email</label>
+        <input type="email" id="edit-user-email" class="form-control-custom" maxlength="120" required>
+        <label class="form-label-custom" for="edit-user-org">Organisation</label>
+        <input type="text" id="edit-user-org" class="form-control-custom" maxlength="80" required>
+        <label class="form-label-custom" for="edit-user-start">Programme start</label>
+        <input type="date" id="edit-user-start" class="form-control-custom" required>
+        <label class="form-label-custom" for="edit-user-role">Role</label>
+        <select id="edit-user-role" class="form-control-custom">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <label class="form-label-custom" for="edit-user-status">Status</label>
+        <select id="edit-user-status" class="form-control-custom">
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="disabled">Disabled</option>
+        </select>
+        <div class="alert-modal-actions">
+          <button type="button" class="btn-custom btn-custom-light" id="btn-user-edit-cancel">Cancel</button>
+          <button type="submit" class="btn-custom btn-custom-primary" id="btn-user-edit-save">Save</button>
+        </div>
+      </form>
     </div>
   </div>
 

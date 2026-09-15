@@ -66,13 +66,22 @@ function api(action, payload) {
         return connectReportSheet_(profile, payload.spreadsheet);
       case 'sendWeekReport':
         profile = requireSession_(payload.token);
-        return sendWeekReport_(profile, payload.weekStart);
+        return sendWeekReport_(profile);
       case 'listUsers':
         profile = requireSession_(payload.token);
         return listUsers_(profile);
       case 'setUserStatus':
         profile = requireSession_(payload.token);
         return setUserStatus_(profile, payload.userId, payload.status);
+      case 'updateUser':
+        profile = requireSession_(payload.token);
+        return updateUser_(profile, payload.user);
+      case 'deleteUser':
+        profile = requireSession_(payload.token);
+        return deleteUser_(profile, payload.userId);
+      case 'disconnectReportSheet':
+        profile = requireSession_(payload.token);
+        return disconnectReportSheet_(profile, payload.userId);
       case 'listTasks':
         profile = requireSession_(payload.token);
         return listTasks_(profile);

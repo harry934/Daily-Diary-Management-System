@@ -581,3 +581,13 @@ function recordsForUser_(rows, userId) {
     return cellAsText_(row.userId, 'yyyy-MM-dd') === String(userId || '');
   });
 }
+
+function deleteRecordsForUser_(sheet, headers, userId) {
+  var rows = recordsForUser_(readRecords_(sheet, headers), userId);
+  rows.sort(function (a, b) {
+    return b._rowIndex - a._rowIndex;
+  });
+  rows.forEach(function (row) {
+    deleteSheetRow_(sheet, row._rowIndex);
+  });
+}
