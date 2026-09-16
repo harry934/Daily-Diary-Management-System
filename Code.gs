@@ -90,10 +90,10 @@ function api(action, payload) {
         return updateUser_(profile, payload.user);
       case 'deleteUser':
         profile = requireSession_(payload.token);
-        return deleteUser_(profile, payload.userId);
+        return deleteUser_(profile, payload.userId, payload.confirmPassword);
       case 'disconnectReportSheet':
         profile = requireSession_(payload.token);
-        return disconnectReportSheet_(profile, payload.userId);
+        return disconnectReportSheet_(profile, payload.userId, payload.confirmPassword);
       case 'listTasks':
         profile = requireSession_(payload.token);
         return listTasks_(profile);

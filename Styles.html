@@ -102,7 +102,8 @@ a:hover { color: var(--brand-lime-hover); }
   background-color: var(--bs-body-bg);
   padding: 1.5rem;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .login-bg-shape {
@@ -128,8 +129,7 @@ a:hover { color: var(--brand-lime-hover); }
   box-shadow: var(--shadow-lg);
   z-index: 1;
   position: relative;
-  max-height: calc(100vh - 3rem);
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .login-brand {
@@ -1842,19 +1842,141 @@ select.form-control-custom {
 }
 
 @media (max-width: 768px) {
-  .page-header { flex-direction: column; }
+  .main-wrapper {
+    padding: 1rem;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  .navbar-custom {
+    margin: -1rem -1rem 1rem;
+    padding: 0.85rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+  .navbar-left {
+    min-width: 0;
+    flex: 1;
+  }
+  .navbar-app-title {
+    font-size: 0.85rem;
+  }
+  .navbar-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .navbar-actions .btn-custom {
+    flex: 1;
+    min-height: 44px;
+  }
+  .navbar-actions .btn-custom span:not(.icon):not([data-icon]) {
+    display: inline;
+  }
+  .navbar-actions .dropdown {
+    flex-shrink: 0;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
   .week-nav { width: 100%; }
-  .week-nav-label { min-width: 0; flex: 1; }
-  .navbar-actions .btn-custom span { display: none; }
-  .footer-custom { flex-direction: column; text-align: center; }
+  .week-nav-label { min-width: 0; flex: 1; text-align: center; }
+  .week-nav .btn-custom {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .dashboard-stack { gap: 1rem; }
+  .dashboard-stats { --bs-gutter-y: 1rem; }
+  .card-stat,
+  .alert-green-card {
+    min-height: 0;
+    padding: 1.25rem;
+  }
+  .card { padding: 1.25rem; border-radius: var(--radius-xl); }
+  .stat-value { font-size: 1.65rem; }
+  .footer-custom { flex-direction: column; text-align: center; gap: 0.35rem; }
   .task-form,
   .subtask-form,
   .report-form { grid-template-columns: 1fr; }
-  .task-status-main { flex-direction: column; align-items: stretch; }
-  .day-done { flex-direction: column; align-items: flex-start; }
-  .task-card-head { flex-direction: column; }
-  .day-times { grid-template-columns: 1fr; }
+  .task-status-bar { padding: 1rem; }
+  .task-status-main { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .day-done {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+    gap: 1rem;
+  }
+  .day-done .btn-custom { width: 100%; min-height: 44px; }
+  .task-card-head { flex-direction: column; align-items: stretch; }
+  .task-card-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .day-times { grid-template-columns: 1fr; gap: 0.85rem; }
+  .day-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .day-actions .btn-custom {
+    width: 100%;
+    min-height: 44px;
+  }
+  .assignment-list { min-height: 180px; }
+  .week-dot {
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+  }
+  .filter-chip {
+    min-height: 44px;
+    padding: 0.55rem 1rem;
+  }
+  .login-wrapper { padding: 1rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+  .login-card { padding: 1.5rem 1.15rem; border-radius: var(--radius-xl); }
+  .login-input,
+  .form-control-custom,
+  .login-input-group .login-input {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+  .btn-login { min-height: 48px; }
   .summary-day-top,
   .summary-week-head { flex-direction: column; align-items: flex-start; }
+  .table-responsive {
+    margin: 0 -0.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-custom th,
+  .table-custom td {
+    padding: 0.75rem 0.85rem;
+    white-space: nowrap;
+  }
+  .admin-actions {
+    justify-content: flex-start;
+  }
+  .admin-actions .btn-custom {
+    min-height: 40px;
+  }
+  .sidebar-toggle-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .clock-step-btn,
+  .clock-minute,
+  .clock-period,
+  .time-chip {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-kicker { font-size: 0.7rem; }
+  .page-title { font-size: 1.35rem; }
+  .stat-value { font-size: 1.45rem; }
+  .navbar-actions .btn-custom span:last-child:not(.icon) {
+    font-size: 0.78rem;
+  }
 }
 </style>

@@ -17,17 +17,43 @@ function generateSalt_() {
   return Utilities.getUuid().replace(/-/g, '');
 }
 
-function hashPassword_(password, salt) {
-  var raw = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256,
-    String(salt) + String(password),
-    Utilities.Charset.UTF_8
-  );
+function bytesToHex_(raw) {
   return raw.map(function (byte) {
     var value = byte < 0 ? byte + 256 : byte;
     var hex = value.toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   }).join('');
+}
+
+function hashPasswordLegacy_(password, salt) {
+  var raw = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    String(salt) + String(password),
+    Utilities.Charset.UTF_8
+  );
+  return bytesToHex_(raw);
+}
+
+function hashPasswordV2_(password, salt) {
+  var rounds = PASSWORD_PBKDF_ROUNDS || 12000;
+  var derived = Utilities.computeHmacSha256Signature(String(password), String(salt));
+  var i;
+  for (i = 1; i < rounds; i++) {
+    derived = Utilities.computeHmacSha256Signature(derived, String(salt));
+  }
+  return PASSWORD_HASH_VERSION + ':' + bytesToHex_(derived);
+}
+
+function hashPassword_(password, salt) {
+  return hashPasswordV2_(password, salt);
+}
+
+function passwordMatches_(password, salt, storedHash) {
+  var hash = String(storedHash || '');
+  if (hash.indexOf(PASSWORD_HASH_VERSION + ':') === 0) {
+    return hashesMatch_(hashPasswordV2_(password, salt), hash);
+  }
+  return hashesMatch_(hashPasswordLegacy_(password, salt), hash);
 }
 
 function hashesMatch_(left, right) {
@@ -159,7 +185,7 @@ function profileFromUser_(user) {
     timezone: getTimezone_(),
     role: user.role || 'user',
     status: user.status || 'approved',
-    reportSpreadsheetId: user.reportSpreadsheetId || ''
+    hasReportSheet: !!user.reportSpreadsheetId
   };
 }
 
@@ -245,12 +271,37 @@ function signupFailKey_(email) {
 }
 
 function assertNotRateLimited_(email) {
+  assertGlobalAuthBudget_();
   if (cache_().get(loginLockKey_(email)) === '1') {
     throw new Error('Too many failed attempts. Try again in 15 minutes.');
   }
 }
 
+function globalAuthFailKey_() {
+  return 'auth_fail_global';
+}
+
+function globalAuthLockKey_() {
+  return 'auth_lock_global';
+}
+
+function assertGlobalAuthBudget_() {
+  if (cache_().get(globalAuthLockKey_()) === '1') {
+    throw new Error('Too many failed attempts across the app. Try again in 15 minutes.');
+  }
+}
+
+function recordGlobalAuthFailure_() {
+  var store = cache_();
+  var count = Number(store.get(globalAuthFailKey_()) || '0') + 1;
+  store.put(globalAuthFailKey_(), String(count), LOGIN_WINDOW_SECONDS);
+  if (count >= 40) {
+    store.put(globalAuthLockKey_(), '1', LOGIN_WINDOW_SECONDS);
+  }
+}
+
 function recordFailedLogin_(email) {
+  recordGlobalAuthFailure_();
   var store = cache_();
   var count = Number(store.get(loginFailKey_(email)) || '0') + 1;
   store.put(loginFailKey_(email), String(count), LOGIN_WINDOW_SECONDS);
@@ -260,6 +311,7 @@ function recordFailedLogin_(email) {
 }
 
 function recordFailedSignup_(email) {
+  recordGlobalAuthFailure_();
   var store = cache_();
   var count = Number(store.get(signupFailKey_(email)) || '0') + 1;
   store.put(signupFailKey_(email), String(count), LOGIN_WINDOW_SECONDS);
@@ -371,10 +423,15 @@ function login_(identifier, password) {
     return { ok: false, error: 'Invalid username or password.' };
   }
 
-  var actualHash = hashPassword_(password, user.passwordSalt);
-  if (!hashesMatch_(actualHash, user.passwordHash)) {
+  if (!passwordMatches_(password, user.passwordSalt, user.passwordHash)) {
     recordFailedLogin_(normalized);
     return { ok: false, error: 'Invalid username or password.' };
+  }
+
+  if (String(user.passwordHash || '').indexOf(PASSWORD_HASH_VERSION + ':') !== 0) {
+    user.passwordSalt = generateSalt_();
+    user.passwordHash = hashPassword_(password, user.passwordSalt);
+    writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
   }
 
   clearFailedLogin_(normalized);
@@ -490,8 +547,7 @@ function changePassword_(profile, payload) {
   if (!payload.currentPassword) {
     throw new Error('Enter your current password.');
   }
-  var currentHash = hashPassword_(payload.currentPassword, user.passwordSalt);
-  if (!hashesMatch_(currentHash, user.passwordHash)) {
+  if (!passwordMatches_(payload.currentPassword, user.passwordSalt, user.passwordHash)) {
     recordFailedLogin_(rateKey);
     throw new Error('Current password is incorrect.');
   }
@@ -507,7 +563,13 @@ function changePassword_(profile, payload) {
   user.passwordHash = hashPassword_(nextPassword, salt);
   writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
   clearFailedLogin_(rateKey);
-  return { ok: true, message: 'Password updated.' };
+  var freshProfile = profileFromUser_(user);
+  return {
+    ok: true,
+    message: 'Password updated.',
+    token: createSession_(freshProfile),
+    profile: freshProfile
+  };
 }
 
 function logout_(token) {

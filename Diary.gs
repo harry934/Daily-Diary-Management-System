@@ -408,6 +408,14 @@ function saveEntry_(entry, profile) {
   };
 }
 
+function sheetSafeText_(value) {
+  var text = String(value == null ? '' : value);
+  if (/^[=+\-@]/.test(text)) {
+    return "'" + text;
+  }
+  return text;
+}
+
 function writeWeekReport_(dest, week, profile) {
   var organisation = organisationOf_(profile);
   var tabName = String(week.weekLabel || 'Week').replace(/[\\/?*\[\]:]/g, ' ').slice(0, 90);
@@ -416,16 +424,16 @@ function writeWeekReport_(dest, week, profile) {
     sheet = dest.insertSheet(tabName);
   }
   sheet.clear();
-  sheet.getRange('A1:G1').merge().setValue(organisation);
+  sheet.getRange('A1:G1').merge().setValue(sheetSafeText_(organisation));
   sheet.getRange('A2:G2').merge().setValue('Internship Daily Diary');
-  sheet.getRange('A3:G3').merge().setValue('Intern: ' + (profile.name || ''));
-  sheet.getRange('A4:G4').merge().setValue(
+  sheet.getRange('A3:G3').merge().setValue(sheetSafeText_('Intern: ' + (profile.name || '')));
+  sheet.getRange('A4:G4').merge().setValue(sheetSafeText_(
     profile.username
       ? 'Username: ' + profile.username
       : (profile.email ? 'Email: ' + profile.email : 'Username: —')
-  );
-  sheet.getRange('A5:G5').merge().setValue(week.weekLabel + ' · ' + week.weekRangeShort);
-  sheet.getRange('A6:G6').merge().setValue('Time zone: ' + (profile.timezone || getTimezone_()));
+  ));
+  sheet.getRange('A5:G5').merge().setValue(sheetSafeText_(week.weekLabel + ' · ' + week.weekRangeShort));
+  sheet.getRange('A6:G6').merge().setValue(sheetSafeText_('Time zone: ' + (profile.timezone || getTimezone_())));
 
   sheet.getRange('A1').setFontSize(18).setFontWeight('bold').setFontColor('#051C12');
   sheet.getRange('A2').setFontSize(13).setFontWeight('bold').setFontColor('#072F1F');
@@ -440,13 +448,13 @@ function writeWeekReport_(dest, week, profile) {
 
   var body = week.days.map(function (day) {
     return [
-      day.weekday,
-      day.date,
-      day.timeIn || '',
-      day.timeOut || '',
-      day.assignment || '',
-      day.hoursWorked || '',
-      day.timeOutReason || ''
+      sheetSafeText_(day.weekday),
+      sheetSafeText_(day.date),
+      sheetSafeText_(day.timeIn || ''),
+      sheetSafeText_(day.timeOut || ''),
+      sheetSafeText_(day.assignment || ''),
+      sheetSafeText_(day.hoursWorked || ''),
+      sheetSafeText_(day.timeOutReason || '')
     ];
   });
   sheet.getRange(9, 1, body.length, headers.length).setValues(body);
@@ -454,7 +462,7 @@ function writeWeekReport_(dest, week, profile) {
 
   var totalRow = 9 + body.length + 1;
   sheet.getRange(totalRow, 5).setValue('Weekly total hours').setFontWeight('bold');
-  sheet.getRange(totalRow, 6).setValue(week.stats.totalHours).setFontWeight('bold').setBackground('#B4F105');
+  sheet.getRange(totalRow, 6).setValue(sheetSafeText_(week.stats.totalHours)).setFontWeight('bold').setBackground('#B4F105');
 
   sheet.setColumnWidth(1, 130);
   sheet.setColumnWidth(2, 120);

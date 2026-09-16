@@ -9,6 +9,15 @@ function requireAdmin_(profile) {
   return profile;
 }
 
+function requireAdminPassword_(profile, password) {
+  requireAdmin_(profile);
+  var admin = findUserById_(profile.userId);
+  if (!admin || !passwordMatches_(password, admin.passwordSalt, admin.passwordHash)) {
+    throw new Error('Confirm with your admin password to continue.');
+  }
+  return admin;
+}
+
 function listUsers_(profile) {
   requireAdmin_(profile);
   var users = readRecords_(getUsersSheet_(), USERS_HEADERS).map(function (row) {
@@ -85,6 +94,55 @@ function openSharedSpreadsheet_(id) {
   }
 }
 
+function systemSpreadsheetIds_() {
+  var ids = {};
+  var adminId = getAdminSpreadsheetId_();
+  if (adminId) {
+    ids[adminId] = true;
+  }
+  var diaryId = getScriptProp_('SPREADSHEET_ID', '');
+  if (diaryId) {
+    ids[diaryId] = true;
+  }
+  return ids;
+}
+
+function assertReportSheetAllowed_(ss, id, profile) {
+  var blocked = systemSpreadsheetIds_();
+  if (blocked[id]) {
+    throw new Error('That spreadsheet is reserved for the app. Connect your own Google Sheet instead.');
+  }
+  var owner = '';
+  try {
+    owner = String(ss.getOwner().getEmail() || '').trim().toLowerCase();
+  } catch (err) {
+    owner = '';
+  }
+  var deployer = ownerEmail_();
+  if (deployer && owner && owner === deployer) {
+    throw new Error('Connect a Google Sheet that you own, not one owned by the app operator. Create a new sheet, share it as Editor with ' + deployer + ', then try again.');
+  }
+  var username = String(profile.username || '').trim().toLowerCase();
+  if (!username) {
+    throw new Error('Your account needs a username before connecting a sheet.');
+  }
+  var expected = REPORT_VERIFY_PREFIX + username;
+  var first = ss.getSheets()[0];
+  var marker = '';
+  try {
+    marker = String(first.getRange(1, 1).getDisplayValue() || '').trim();
+  } catch (err) {
+    marker = '';
+  }
+  if (marker !== expected) {
+    throw new Error(
+      'Open your sheet and put exactly ' + expected +
+      ' in cell A1 of the first tab, share the sheet as Editor with ' +
+      (deployer || 'the app owner') + ', then connect again.'
+    );
+  }
+}
+
 function getReportSetup_(profile) {
   var user = findUserById_(profile.userId);
   var connectedId = user && user.reportSpreadsheetId ? user.reportSpreadsheetId : '';
@@ -96,12 +154,13 @@ function getReportSetup_(profile) {
       title = '';
     }
   }
+  var username = String((user && user.username) || profile.username || '').trim().toLowerCase();
   return {
     ok: true,
     ownerEmail: ownerEmail_(),
-    spreadsheetId: connectedId,
     spreadsheetTitle: title,
-    connected: !!connectedId
+    connected: !!connectedId,
+    verifyCode: username ? REPORT_VERIFY_PREFIX + username : ''
   };
 }
 
@@ -115,12 +174,12 @@ function connectReportSheet_(profile, raw) {
   }
   var id = parseSpreadsheetId_(raw);
   var ss = openSharedSpreadsheet_(id);
+  assertReportSheetAllowed_(ss, id, profileFromUser_(user));
   user.reportSpreadsheetId = id;
   writeRecord_(getUsersSheet_(), USERS_HEADERS, user._rowIndex, user);
   return {
     ok: true,
     ownerEmail: ownerEmail_(),
-    spreadsheetId: id,
     spreadsheetTitle: ss.getName(),
     connected: true
   };
@@ -147,7 +206,6 @@ function sendWeekReport_(profile) {
   });
   return {
     ok: true,
-    spreadsheetId: user.reportSpreadsheetId,
     spreadsheetTitle: dest.getName(),
     weekCount: weeks.length,
     url: dest.getUrl()
@@ -165,8 +223,8 @@ function countApprovedAdmins_() {
   return count;
 }
 
-function disconnectReportSheet_(profile, userId) {
-  requireAdmin_(profile);
+function disconnectReportSheet_(profile, userId, confirmPassword) {
+  requireAdminPassword_(profile, confirmPassword);
   var user = findUserById_(userId);
   if (!user) {
     throw new Error('User not found.');
@@ -193,6 +251,11 @@ function updateUser_(profile, payload) {
   var status = String(payload.status || user.status || 'approved').toLowerCase();
   if (status !== 'pending' && status !== 'disabled' && status !== 'approved') {
     throw new Error('Unknown account status.');
+  }
+
+  var promoting = user.role !== 'admin' && role === 'admin';
+  if (promoting) {
+    requireAdminPassword_(profile, payload.confirmPassword);
   }
 
   var editingSelf = user.id === profile.userId;
@@ -234,8 +297,8 @@ function updateUser_(profile, payload) {
   return listUsers_(profile);
 }
 
-function deleteUser_(profile, userId) {
-  requireAdmin_(profile);
+function deleteUser_(profile, userId, confirmPassword) {
+  requireAdminPassword_(profile, confirmPassword);
   var user = findUserById_(userId);
   if (!user) {
     throw new Error('User not found.');

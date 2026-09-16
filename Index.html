@@ -313,10 +313,10 @@
           </div>
           <p id="report-status">Connect your own Google Sheet once. It will hold every week’s records.</p>
           <ol class="report-steps" id="report-steps">
-            <li>Create a Google Sheet.</li>
-            <li>Share it as <strong>Editor</strong> with <code id="report-owner-email">the app owner</code>.</li>
-            <li>Copy the sheet URL from the address bar.</li>
-            <li>Paste it below and connect. You only do this once.</li>
+            <li>Create a <strong>new</strong> Google Sheet that you own (do not use the app’s sheets).</li>
+            <li>In cell <strong>A1</strong> of the first tab, type exactly: <code id="report-verify-code">DAILY-DIARY:your_username</code></li>
+            <li>Share the sheet as <strong>Editor</strong> with <code id="report-owner-email">the app owner</code>.</li>
+            <li>Copy the sheet URL from the address bar, paste it below, and connect. You only do this once.</li>
           </ol>
           <form id="report-form" class="report-form">
             <input type="url" id="report-url" class="form-control-custom" placeholder="https://docs.google.com/spreadsheets/d/...">

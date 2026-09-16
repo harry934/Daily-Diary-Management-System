@@ -854,6 +854,9 @@
     if (result.ownerEmail) {
       $('report-owner-email').textContent = result.ownerEmail;
     }
+    if (result.verifyCode && $('report-verify-code')) {
+      $('report-verify-code').textContent = result.verifyCode;
+    }
     var connected = !!result.connected;
     $('report-card').classList.toggle('d-none', connected);
     if (!connected) {
@@ -1027,6 +1030,13 @@
       newPassword: newPassword,
       newPasswordConfirm: confirmPassword
     }).then(function (result) {
+      if (result.token) {
+        state.token = result.token;
+        sessionStorage.setItem(TOKEN_KEY, result.token);
+      }
+      if (result.profile) {
+        applyProfile(result.profile);
+      }
       hidePasswordModal();
       showToast(result.message || 'Password updated.');
     }).catch(function (err) {
@@ -1037,18 +1047,33 @@
   }
 
   function saveUserEdit(button) {
+    var role = $('edit-user-role').value;
+    var userId = $('edit-user-id').value;
+    var existing = (state.adminUsers || []).filter(function (item) {
+      return item.id === userId;
+    })[0];
+    var promoting = existing && existing.role !== 'admin' && role === 'admin';
+    var confirmPassword = '';
+    if (promoting) {
+      confirmPassword = promptAdminPassword('Promote this account to admin');
+      if (!confirmPassword) {
+        showToast('Cancelled — password required to promote an admin.', 'error');
+        return Promise.resolve();
+      }
+    }
     setButtonBusy(button, true, 'Saving…');
     return api('updateUser', {
       token: state.token,
       user: {
-        userId: $('edit-user-id').value,
+        userId: userId,
         name: $('edit-user-name').value,
         username: $('edit-user-username').value,
         email: $('edit-user-email').value,
         organisation: $('edit-user-org').value,
         programmeStart: $('edit-user-start').value,
-        role: $('edit-user-role').value,
-        status: $('edit-user-status').value
+        role: role,
+        status: $('edit-user-status').value,
+        confirmPassword: confirmPassword
       }
     }).then(function () {
       hideUserEditModal();
@@ -1061,12 +1086,29 @@
     });
   }
 
+  function promptAdminPassword(reason) {
+    var value = window.prompt(reason + '\n\nEnter your admin password to confirm:');
+    if (value == null || !String(value).trim()) {
+      return '';
+    }
+    return String(value);
+  }
+
   function disconnectUserSheet(user, button) {
     if (!window.confirm('Disconnect the report sheet for ' + user.name + '? They will need to connect a new sheet.')) {
       return;
     }
+    var confirmPassword = promptAdminPassword('Disconnect sheet for ' + user.name);
+    if (!confirmPassword) {
+      showToast('Cancelled — password required.', 'error');
+      return;
+    }
     setButtonBusy(button, true, 'Saving…');
-    api('disconnectReportSheet', { token: state.token, userId: user.id }).then(function () {
+    api('disconnectReportSheet', {
+      token: state.token,
+      userId: user.id,
+      confirmPassword: confirmPassword
+    }).then(function () {
       showToast('Sheet disconnected.');
       return loadAdminUsers();
     }).catch(function (err) {
@@ -1080,8 +1122,17 @@
     if (!window.confirm('Delete ' + user.name + ' and their diary and tasks? This cannot be undone.')) {
       return;
     }
+    var confirmPassword = promptAdminPassword('Delete account for ' + user.name);
+    if (!confirmPassword) {
+      showToast('Cancelled — password required.', 'error');
+      return;
+    }
     setButtonBusy(button, true, 'Deleting…');
-    api('deleteUser', { token: state.token, userId: user.id }).then(function () {
+    api('deleteUser', {
+      token: state.token,
+      userId: user.id,
+      confirmPassword: confirmPassword
+    }).then(function () {
       showToast('Account deleted.');
       return loadAdminUsers();
     }).catch(function (err) {

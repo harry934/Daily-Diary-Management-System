@@ -11,10 +11,15 @@ var SETUP_INTERN_NAME = 'Your Full Name';
 var COMPANY_NAME = 'Daily Diary';
 var PROGRAMME_START_DATE = '2026-09-07';
 var APP_TIMEZONE = 'Africa/Nairobi';
-var ADMIN_SPREADSHEET_ID = '1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc';
+/** Prefer Script Properties ADMIN_SPREADSHEET_ID. Fallback kept for first-time setup only. */
+var ADMIN_SPREADSHEET_ID = '';
+/** Set this to your admin Gmail so that email can be auto-approved as admin on signup. Leave blank to require manual promotion. */
 var ADMIN_EMAIL = '';
 var DAYS_IN_WEEK = 7;
-var SCHEMA_VERSION = '5';
+var SCHEMA_VERSION = '6';
+var REPORT_VERIFY_PREFIX = 'DAILY-DIARY:';
+var PASSWORD_HASH_VERSION = 'v2';
+var PASSWORD_PBKDF_ROUNDS = 12000;
 
 var DIARY_SHEET_NAME = 'Diary';
 var TASKS_SHEET_NAME = 'Tasks';
@@ -51,9 +56,14 @@ function setupInitialize() {
   props.setProperties({
     SPREADSHEET_ID: spreadsheetId,
     TIMEZONE: APP_TIMEZONE,
-    ADMIN_SPREADSHEET_ID: ADMIN_SPREADSHEET_ID,
     SCHEMA_VERSION: SCHEMA_VERSION
   }, false);
+  if (ADMIN_SPREADSHEET_ID) {
+    props.setProperty('ADMIN_SPREADSHEET_ID', ADMIN_SPREADSHEET_ID);
+  }
+  if (!props.getProperty('ADMIN_SPREADSHEET_ID')) {
+    throw new Error('Set Script Property ADMIN_SPREADSHEET_ID (or ADMIN_SPREADSHEET_ID in Setup.gs once) before setupInitialize.');
+  }
 
   migrateUsersFromDiarySpreadsheet_(ss);
   seedSetupUserIfRequested_();
@@ -381,7 +391,7 @@ function ownerEmail_() {
 }
 
 function adminEmail_() {
-  var configured = String(ADMIN_EMAIL || '').trim().toLowerCase();
+  var configured = String(ADMIN_EMAIL || getScriptProp_('ADMIN_EMAIL', '')).trim().toLowerCase();
   if (configured && configured.indexOf('@') > 0 && configured !== 'your.email@example.com') {
     return configured;
   }
@@ -389,7 +399,7 @@ function adminEmail_() {
   if (setup.indexOf('@') > 0 && setup !== 'your.email@example.com') {
     return setup;
   }
-  return ownerEmail_();
+  return '';
 }
 
 function isAdminEmail_(email) {
@@ -397,10 +407,14 @@ function isAdminEmail_(email) {
   return !!(admin && String(email || '').trim().toLowerCase() === admin);
 }
 
+function getAdminSpreadsheetId_() {
+  return String(getScriptProp_('ADMIN_SPREADSHEET_ID', '') || ADMIN_SPREADSHEET_ID || '').trim();
+}
+
 function getAdminSpreadsheet_() {
-  var id = ADMIN_SPREADSHEET_ID || getScriptProp_('ADMIN_SPREADSHEET_ID', '');
+  var id = getAdminSpreadsheetId_();
   if (!id) {
-    throw new Error('Admin spreadsheet is not configured.');
+    throw new Error('Admin spreadsheet is not configured. Set Script Property ADMIN_SPREADSHEET_ID.');
   }
   try {
     return SpreadsheetApp.openById(id);
@@ -647,43 +661,33 @@ function ensureAdminAccount_() {
   if (!rows.length) {
     return;
   }
-  var owner = ownerEmail_();
-  var ownerRow = null;
-  var oldestApproved = null;
   var hasApprovedAdmin = false;
   rows.forEach(function (row) {
     var user = hydrateUser_(row);
     if (user.role === 'admin' && user.status === 'approved') {
       hasApprovedAdmin = true;
     }
-    if (owner && user.email === owner) {
-      ownerRow = user;
-    }
-    if (user.status === 'approved') {
-      if (!oldestApproved || String(user.createdAt).localeCompare(String(oldestApproved.createdAt)) < 0) {
-        oldestApproved = user;
-      }
-    }
   });
   if (hasApprovedAdmin) {
     return;
   }
-  var pick = ownerRow || oldestApproved;
-  if (!pick) {
-    pick = hydrateUser_(rows[0]);
-    rows.forEach(function (row) {
-      var user = hydrateUser_(row);
-      if (String(user.createdAt).localeCompare(String(pick.createdAt)) < 0) {
-        pick = user;
-      }
-    });
-  }
-  if (!pick) {
+  var admin = adminEmail_();
+  if (!admin) {
     return;
   }
-  pick.role = 'admin';
-  pick.status = 'approved';
-  writeRecord_(sheet, USERS_HEADERS, pick._rowIndex, pick);
+  var match = null;
+  rows.forEach(function (row) {
+    var user = hydrateUser_(row);
+    if (user.email === admin) {
+      match = user;
+    }
+  });
+  if (!match) {
+    return;
+  }
+  match.role = 'admin';
+  match.status = 'approved';
+  writeRecord_(sheet, USERS_HEADERS, match._rowIndex, match);
 }
 
 function ensureAllSheets_(ss) {
