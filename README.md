@@ -11,6 +11,10 @@ Web-based internship diary. People create an account with a **username** (email 
 
 GitHub: https://github.com/harry934/Daily-Diary-Management-System
 
+**Share this URL with users (hides the Google banner):** https://harry934.github.io/Daily-Diary-Management-System/
+
+Apps Script backend (`/exec`): `https://script.google.com/macros/s/AKfycbyk8PzPuRuE9fTJFiq0ZBubXDtkluqPZgp4XilsvwGKSVQg6pr1clCJiN5UMQDVCrKd/exec`
+
 Existing Apps Script project ID: `1WDunC7vNnZrtwaYOUCz8sSHK1JH-UtK3MIgyUp26VkgThceBX1Wx9Nof`
 
 Admin users spreadsheet ID: `1uC3kzvoxwTCalatyhLXAt75I1cV2yRCbbb--Kktqfgc`
@@ -59,9 +63,13 @@ After first setup, change `SETUP_INTERN_PASSWORD` back to a placeholder if you u
 4. Who has access: **Anyone**
 5. Deploy and copy the `/exec` URL
 
-Hard-refresh the `/exec` URL after a new deploy.
+Hard-refresh the `/exec` URL after a new deploy. Keep deploying to the **same** web app deployment so the GitHub Pages iframe keeps working.
 
-Use [INVITE.md](INVITE.md) when you invite someone. Put the `/exec` URL at the top of that note.
+**Invite people with the GitHub Pages link**, not the long `/exec` URL: https://harry934.github.io/Daily-Diary-Management-System/
+
+The page in [`docs/`](docs/) is a full-screen iframe of the Apps Script app (GitHub Pages → Deploy from branch `main` / folder `/docs`).
+
+Use [INVITE.md](INVITE.md) when you invite someone.
 
 ## What people can do
 

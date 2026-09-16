@@ -3,3 +3,4 @@ INVITE.md
 .gitignore
 .git/**
 .clasprc.json
+docs/**

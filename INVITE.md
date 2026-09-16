@@ -4,7 +4,11 @@ This is a Monday–Sunday internship diary. You log the days you actually work, 
 
 ## 1. Open the app
 
-Ask the admin for the web app link (it ends in `/exec`, or a short link that opens it). Open it in a browser.
+Open the invite link the admin sent you:
+
+**https://harry934.github.io/Daily-Diary-Management-System/**
+
+(That page embeds the live app. The admin’s Apps Script `/exec` URL is the backend; you do not need it.)
 
 ## 2. Create your account
 
@@ -56,4 +60,4 @@ Open your profile menu (top right) and choose **Change password**. Enter your cu
 
 ---
 
-**Admin:** send this file together with the live `/exec` URL (or your short link).
+**Admin:** send this file together with the GitHub Pages link: https://harry934.github.io/Daily-Diary-Management-System/
