@@ -39,16 +39,17 @@ After you save, the form shows **Done for today** and stays blank until the next
 
 ## 4. Connect your Google Sheet (once)
 
-Excel download is not used. **One** Google Sheet stores every week’s records.
+Excel download is not used. **One** Google Sheet stores every week’s records. Use a **new sheet you own** (not the app’s sheets).
 
 1. Go to [Google Sheets](https://sheets.google.com) and create a blank spreadsheet.
-2. Click **Share**. Add the admin’s app email as **Editor** (the Daily Diary screen shows the exact address to copy).
-3. Copy the spreadsheet URL from the browser address bar.
-4. In Daily Diary, paste that URL under **Report spreadsheet** and click **Connect sheet**.
+2. In cell **A1** of the first tab, type exactly the code shown on the Daily Diary screen (it looks like `DAILY-DIARY:your_username`).
+3. Click **Share**. Add the admin’s app email as **Editor** (the Daily Diary screen shows the exact address to copy).
+4. Copy the spreadsheet URL from the address bar.
+5. In Daily Diary, paste that URL under **Report spreadsheet** and click **Connect sheet**.
 
 You only paste this URL once. After that, click **Send records to my sheet** whenever you want tabs such as `Week 1`, `Week 2`, and so on. If you need a different spreadsheet later, ask the admin to disconnect your current sheet.
 
-If connect fails, the sheet is usually not shared with the app email yet. Share it as Editor and try again.
+If connect fails, check A1 has the exact code, the sheet is shared as Editor with the app email, and the sheet is one you own.
 
 ## 5. Tasks
 
