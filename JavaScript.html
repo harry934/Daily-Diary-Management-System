@@ -81,7 +81,11 @@
       google.script.run
         .withSuccessHandler(function (result) {
           if (!result || result.ok === false) {
-            reject(new Error((result && result.error) || 'Request failed.'));
+            var message = (result && result.error) || 'Request failed.';
+            if (/session expired|signed in elsewhere/i.test(message) && state.token) {
+              expireSession();
+            }
+            reject(new Error(message));
             return;
           }
           resolve(result);
@@ -837,7 +841,7 @@
       }
     }).catch(function (err) {
       showToast(err.message, 'error');
-      if (/session expired/i.test(err.message)) {
+      if (/session expired|signed in elsewhere/i.test(err.message)) {
         expireSession();
       }
     }).then(function () {

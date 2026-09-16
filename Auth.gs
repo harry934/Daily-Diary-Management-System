@@ -275,9 +275,22 @@ function clearFailedLogin_(email) {
   store.remove(signupFailKey_(email));
 }
 
+function userSessionKey_(userId) {
+  return 'user_sess_' + String(userId || '');
+}
+
 function createSession_(profile) {
   var token = Utilities.getUuid() + Utilities.getUuid();
-  cache_().put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
+  var store = cache_();
+  var userId = profile && profile.userId ? String(profile.userId) : '';
+  if (userId) {
+    var previous = store.get(userSessionKey_(userId));
+    if (previous && previous !== token) {
+      store.remove('sess_' + previous);
+    }
+    store.put(userSessionKey_(userId), token, SESSION_TTL_SECONDS);
+  }
+  store.put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
   return token;
 }
 
@@ -296,11 +309,25 @@ function readSession_(token) {
   }
 }
 
+function assertActiveSessionToken_(token, userId) {
+  if (!userId) {
+    throw new Error('Session expired. Please sign in again.');
+  }
+  var active = cache_().get(userSessionKey_(userId));
+  if (!active) {
+    throw new Error('Session expired. Please sign in again.');
+  }
+  if (active !== token) {
+    throw new Error('Signed in elsewhere. Please sign in again.');
+  }
+}
+
 function requireSession_(token) {
   var profile = readSession_(token);
   if (!profile || !profile.userId) {
     throw new Error('Session expired. Please sign in again.');
   }
+  assertActiveSessionToken_(token, profile.userId);
   var user = findUserById_(profile.userId);
   assertUserActive_(user);
   return profileFromUser_(user);
@@ -485,7 +512,15 @@ function changePassword_(profile, payload) {
 
 function logout_(token) {
   if (token) {
-    cache_().remove('sess_' + token);
+    var store = cache_();
+    var profile = readSession_(token);
+    store.remove('sess_' + token);
+    if (profile && profile.userId) {
+      var key = userSessionKey_(profile.userId);
+      if (store.get(key) === token) {
+        store.remove(key);
+      }
+    }
   }
   return { ok: true };
 }
@@ -493,7 +528,11 @@ function logout_(token) {
 function getSession_(token) {
   try {
     var profile = requireSession_(token);
-    cache_().put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
+    var store = cache_();
+    store.put('sess_' + token, JSON.stringify(profile), SESSION_TTL_SECONDS);
+    if (profile.userId) {
+      store.put(userSessionKey_(profile.userId), token, SESSION_TTL_SECONDS);
+    }
     return { ok: true, profile: profile };
   } catch (err) {
     return { ok: false, error: String(err && err.message ? err.message : err) };
