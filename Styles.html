@@ -62,19 +62,27 @@ a:hover { color: var(--brand-lime-hover); }
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: var(--radius-sm); }
 
 .boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bs-body-bg);
+  background: var(--brand-forest-medium);
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.boot-screen.d-none {
+  display: none !important;
 }
 
 .boot-logo {
-  width: 88px;
-  height: 88px;
+  width: 96px;
+  height: 96px;
   display: block;
-  transform-origin: center;
-  animation: rotateLogo 2.4s linear infinite;
+  transform-origin: 50% 50%;
+  animation: rotateLogo 2.2s linear infinite;
 }
 
 .loader-ring {
@@ -266,7 +274,7 @@ a:hover { color: var(--brand-lime-hover); }
 .btn-login {
   background-color: var(--brand-forest-medium);
   color: #FFFFFF;
-  border: none;
+  border: 1px solid var(--brand-forest-medium);
   border-radius: var(--radius-lg);
   padding: 0.85rem;
   font-weight: 700;
@@ -276,6 +284,7 @@ a:hover { color: var(--brand-lime-hover); }
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease, opacity 0.28s ease;
 }
 
 .btn-login:hover {
@@ -371,6 +380,7 @@ a:hover { color: var(--brand-lime-hover); }
   border-radius: var(--radius-md);
   font-weight: 500;
   position: relative;
+  transition: color 0.28s ease, background-color 0.28s ease;
 }
 
 .sidebar-menu-link:hover {
@@ -495,6 +505,7 @@ a:hover { color: var(--brand-lime-hover); }
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  transition: color 0.28s ease, background-color 0.28s ease, opacity 0.28s ease;
 }
 
 .navbar-profile-btn.dropdown-toggle::after { display: none !important; }
@@ -572,6 +583,7 @@ a:hover { color: var(--brand-lime-hover); }
   position: relative;
   overflow: hidden;
   height: 100%;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .card-header {
@@ -742,6 +754,7 @@ a:hover { color: var(--brand-lime-hover); }
   background-color: #FFFFFF;
   border: 1px solid rgba(11, 19, 15, 0.12);
   border-radius: var(--radius-md);
+  transition: border-color 0.28s ease, box-shadow 0.28s ease;
 }
 
 .form-control-custom:focus {
@@ -778,6 +791,7 @@ select.form-control-custom {
   font-weight: 800;
   color: var(--text-muted-green);
   cursor: pointer;
+  transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
 }
 
 .week-dot.is-saved {
@@ -853,6 +867,7 @@ select.form-control-custom {
   color: var(--brand-forest-dark);
   font-weight: 800;
   cursor: pointer;
+  transition: background-color 0.28s ease, color 0.28s ease;
 }
 
 .clock-step-btn:hover {
@@ -878,6 +893,7 @@ select.form-control-custom {
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease;
 }
 
 .clock-minute.is-selected,
@@ -995,7 +1011,16 @@ select.form-control-custom {
   gap: 0.75rem;
 }
 
-.app-panel { display: block; position: relative; }
+.app-panel {
+  display: block;
+  position: relative;
+  animation: panelFade 0.35s ease;
+}
+
+@keyframes panelFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 .time-field { position: relative; min-width: 132px; }
 
@@ -1012,6 +1037,7 @@ select.form-control-custom {
   font-weight: 700;
   color: var(--text-main);
   cursor: pointer;
+  transition: border-color 0.28s ease, box-shadow 0.28s ease, background-color 0.28s ease;
 }
 
 .time-field-btn.is-empty { color: var(--text-muted-green); font-weight: 600; }
@@ -1175,6 +1201,7 @@ select.form-control-custom {
   font-size: 0.8rem;
   font-weight: 800;
   cursor: pointer;
+  transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease;
 }
 
 .filter-chip.is-active {
@@ -1360,6 +1387,7 @@ select.form-control-custom {
   border: 1px solid transparent;
   cursor: pointer;
   line-height: 1.5;
+  transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, transform 0.28s ease, opacity 0.28s ease;
 }
 
 .btn-custom-sm {
