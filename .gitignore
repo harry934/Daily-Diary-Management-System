@@ -6,3 +6,12 @@ Thumbs.db
 .env.*
 **/secrets.*
 **/local.secrets.*
+
+# Keep Apps Script sources local-only (not on public GitHub)
+*.gs
+Index.html
+JavaScript.html
+Styles.html
+appsscript.json
+.clasp.json
+.claspignore
