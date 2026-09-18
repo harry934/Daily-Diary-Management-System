@@ -12,7 +12,9 @@ Record time in/out and assignments. Track tasks with priorities and due dates.
 
 ## Reports
 
-Use **Download PDF** for a branded summary. Use **Export to Sheet** only when you want a Google Sheet copy — paste your sheet URL when prompted (put `DAILY-DIARY:your_username` in A1 and share as Editor with the app owner).
+Use **Download PDF** or **Export to Sheet**. Pick specific weeks (This week / Last 4 / All), then download. For sheet export, paste your sheet URL when prompted (`DAILY-DIARY:your_username` in A1, shared as Editor with the app owner).
+
+The dashboard tracks progress toward **400 internship hours** (~13 weeks).
 
 ## Change password
 
