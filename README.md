@@ -1,6 +1,6 @@
 # Daily Diary
 
-Internship daily diary. Interns create an account, an admin approves them, then they log working days, track tasks, and download PDF or optional Google Sheet reports for selected weeks. Progress toward **400 hours** (~13 weeks) is shown on the dashboard.
+Internship daily diary. Interns create an account, then log working days, track tasks, and download PDF or optional Google Sheet reports for selected weeks. Progress toward **400 hours** (~14 weeks by default) is shown on the dashboard.
 
 **App:** https://harry934.github.io/Daily-Diary-Management-System/
 

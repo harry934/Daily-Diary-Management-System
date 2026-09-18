@@ -4,7 +4,7 @@ Open the app: **https://harry934.github.io/Daily-Diary-Management-System/**
 
 ## Create an account
 
-Enter your name, username, organisation, optional email, password (8+ characters with at least one capital letter), programme start date, number of weeks (default 14), target hours (default 400), and working days. An admin must approve you before you can sign in.
+Enter your name, username, organisation, optional email, password (8+ characters with at least one capital letter), programme start date, number of weeks (default 14), target hours (default 400), and working days. After you create the account you can open your dashboard right away.
 
 ## Log days and tasks
 
