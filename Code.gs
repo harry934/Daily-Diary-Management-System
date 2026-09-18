@@ -70,6 +70,9 @@ function api(action, payload) {
       case 'getSummary':
         profile = requireSession_(payload.token);
         return getSummary_(profile);
+      case 'downloadSummaryPdf':
+        profile = requireSession_(payload.token);
+        return downloadSummaryPdf_(profile);
       case 'getReportSetup':
         profile = requireSession_(payload.token);
         return getReportSetup_(profile);

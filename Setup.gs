@@ -11,10 +11,17 @@ var SETUP_INTERN_NAME = 'Your Full Name';
 var COMPANY_NAME = 'Daily Diary';
 var PROGRAMME_START_DATE = '2026-09-07';
 var APP_TIMEZONE = 'Africa/Nairobi';
-/** Prefer Script Properties ADMIN_SPREADSHEET_ID. Fallback kept for first-time setup only. */
+/**
+ * Prefer Script Properties for secrets. Leave these empty in git.
+ * Use setupConfigureAdminSheet() once from the editor to store ADMIN_SPREADSHEET_ID.
+ */
 var ADMIN_SPREADSHEET_ID = '';
-/** Set this to your admin Gmail so that email can be auto-approved as admin on signup. Leave blank to require manual promotion. */
+/** Optional: set Script Property ADMIN_EMAIL (preferred) or this placeholder locally only — never commit a real address. */
 var ADMIN_EMAIL = '';
+/**
+ * Temporary paste for setupConfigureAdminSheet only. Run that function, then clear this before clasp push.
+ */
+var ADMIN_SHEET_ID_ONCE = '';
 var DAYS_IN_WEEK = 7;
 var SCHEMA_VERSION = '6';
 var REPORT_VERIFY_PREFIX = 'DAILY-DIARY:';
@@ -62,7 +69,7 @@ function setupInitialize() {
     props.setProperty('ADMIN_SPREADSHEET_ID', ADMIN_SPREADSHEET_ID);
   }
   if (!props.getProperty('ADMIN_SPREADSHEET_ID')) {
-    throw new Error('Set Script Property ADMIN_SPREADSHEET_ID (or ADMIN_SPREADSHEET_ID in Setup.gs once) before setupInitialize.');
+    throw new Error('Admin sheet is not configured. Run setupConfigureAdminSheet once, or set Script Property ADMIN_SPREADSHEET_ID in Project settings.');
   }
 
   migrateUsersFromDiarySpreadsheet_(ss);
@@ -74,6 +81,24 @@ function setupInitialize() {
   Logger.log('Setup complete.');
   Logger.log('Spreadsheet: ' + ss.getUrl());
   Logger.log('People can create accounts from the web app.');
+}
+
+/**
+ * Editor-only: save ADMIN_SPREADSHEET_ID to Script Properties without committing it.
+ * 1. Paste the Users spreadsheet ID into ADMIN_SHEET_ID_ONCE above
+ * 2. Run this function
+ * 3. Clear ADMIN_SHEET_ID_ONCE back to '' before clasp push / commit
+ */
+function setupConfigureAdminSheet() {
+  var id = String(ADMIN_SHEET_ID_ONCE || ADMIN_SPREADSHEET_ID || '').trim();
+  if (!id) {
+    throw new Error('Paste your admin Users spreadsheet ID into ADMIN_SHEET_ID_ONCE in Setup.gs, run setupConfigureAdminSheet, then clear ADMIN_SHEET_ID_ONCE.');
+  }
+  if (!/^[a-zA-Z0-9-_]+$/.test(id)) {
+    throw new Error('That does not look like a spreadsheet ID.');
+  }
+  PropertiesService.getScriptProperties().setProperty('ADMIN_SPREADSHEET_ID', id);
+  Logger.log('ADMIN_SPREADSHEET_ID saved to Script Properties. Clear ADMIN_SHEET_ID_ONCE now, then run setupInitialize.');
 }
 
 /**
@@ -716,6 +741,9 @@ function getCompany_() {
 function getDiarySpreadsheet_() {
   var id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
   if (!id) {
+    if (!getAdminSpreadsheetId_()) {
+      throw new Error('System is not set up. Set Script Property ADMIN_SPREADSHEET_ID (run setupConfigureAdminSheet), then run setupInitialize.');
+    }
     throw new Error('System is not set up. Run setupInitialize in the Apps Script editor.');
   }
   return SpreadsheetApp.openById(id);
