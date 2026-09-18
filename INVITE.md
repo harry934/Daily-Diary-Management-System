@@ -16,6 +16,6 @@ Use **Download PDF** or **Export to Sheet**. Pick specific weeks (This week / La
 
 The dashboard tracks progress toward your **target hours** (default 400) over your chosen weeks (default 14).
 
-## Change password
+## Settings
 
-Profile menu → **Change password**.
+Open **Settings** in the sidebar to edit your profile, organisation, programme weeks/hours/working days, or password. You can also delete your account there (password required). Saving profile changes also requires your current password.
