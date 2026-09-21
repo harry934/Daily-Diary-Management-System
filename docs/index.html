@@ -1,0 +1,1108 @@
+﻿ï»¿<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <script>
+    (function () {
+      var href = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJRSURBVFhHY2DXl/8/kHjUAUPbAbLuMv+V/KSxyhGLyXaAd5XI/y0fWcE4qkcIqxpiMNkOqFjHB3dAw3ZerGqIwWQ7IHaC0P8tHyAOSJgsiFUNMZgyB0BDAMTGpoYYjNMBvGZy/4Obhf9rBEthlSfWAba54v+zFwj8F7KWxSqP0wEZcwXBhm94y/a/+wg3Rmon5ABxJ5n/JSv5/2+Fquk8yIOhBoRxOiB5GsSCzdB4BmGQo2A+weUAUMhFdAn9X/mUHSwHc8Ck01xwNcgYbxQkTRH6v/41G9wiEAYZDIqagqX8cLGJp7j+W6SJ/7fNFv8//yYHinoQ7j3K/V/RF3tUEkyEoMKmbisvioGbkdjIeOsnVH7/Me7/OlGSWM2FYYIOgGGQD2de4kSxABdeco/jv2+dCFZz0DHRDoDhCSe4sFoKw0sfsONM8dgwyQ5YeBszjtExNn24MNEOAKWF5l3AtIAWz+gYlOonn+UiGPcwTNABoOAEZcl1r6C5ASlbYsVIDgTVF6DyAJu5MIzXAaCEBEpQKBYA8cI72KNh5RO2/yufQfI/DIMcDionQNkamx04HQBy/cZ3qGUAKApAJSLIsB5g6QgTB5UVeYsgxS3IxyA2sj5QtGx4w4Y1cWJ1ACi+YZo3v2cFFy6gQgZZDaGiGJQGQOUAcpnhXCSGoQ6rA0A+BIUAKDH51YtgDT5CDoBhP2A0rnnBDsy+3FjTA8FEiAsT6wBCeNQBZDtgwBuloFwBcwCxFQ82TLYDQNijXBRsOa5ChhhMkQOogUe6A+T/AwCeGVEWasYgbgAAAABJRU5ErkJggg==';
+      function apply() {
+        var links = document.querySelectorAll('link[rel*="icon"]');
+        if (!links.length) {
+          var l = document.createElement('link');
+          l.rel = 'icon';
+          l.type = 'image/png';
+          l.href = href;
+          document.head.appendChild(l);
+        } else {
+          links.forEach(function (l) { l.href = href; });
+        }
+      }
+      apply();
+      document.addEventListener('DOMContentLoaded', apply);
+    })();
+  </script><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Tiyo</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJRSURBVFhHY2DXl/8/kHjUAUPbAbLuMv+V/KSxyhGLyXaAd5XI/y0fWcE4qkcIqxpiMNkOqFjHB3dAw3ZerGqIwWQ7IHaC0P8tHyAOSJgsiFUNMZgyB0BDAMTGpoYYjNMBvGZy/4Obhf9rBEthlSfWAba54v+zFwj8F7KWxSqP0wEZcwXBhm94y/a/+wg3Rmon5ABxJ5n/JSv5/2+Fquk8yIOhBoRxOiB5GsSCzdB4BmGQo2A+weUAUMhFdAn9X/mUHSwHc8Ck01xwNcgYbxQkTRH6v/41G9wiEAYZDIqagqX8cLGJp7j+W6SJ/7fNFv8//yYHinoQ7j3K/V/RF3tUEkyEoMKmbisvioGbkdjIeOsnVH7/Me7/OlGSWM2FYYIOgGGQD2de4kSxABdeco/jv2+dCFZz0DHRDoDhCSe4sFoKw0sfsONM8dgwyQ5YeBszjtExNn24MNEOAKWF5l3AtIAWz+gYlOonn+UiGPcwTNABoOAEZcl1r6C5ASlbYsVIDgTVF6DyAJu5MIzXAaCEBEpQKBYA8cI72KNh5RO2/yufQfI/DIMcDionQNkamx04HQBy/cZ3qGUAKApAJSLIsB5g6QgTB5UVeYsgxS3IxyA2sj5QtGx4w4Y1cWJ1ACi+YZo3v2cFFy6gQgZZDaGiGJQGQOUAcpnhXCSGoQ6rA0A+BIUAKDH51YtgDT5CDoBhP2A0rnnBDsy+3FjTA8FEiAsT6wBCeNQBZDtgwBuloFwBcwCxFQ82TLYDQNijXBRsOa5ChhhMkQOogUe6A+T/AwCeGVEWasYgbgAAAABJRU5ErkJggg==">
+  <link rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJRSURBVFhHY2DXl/8/kHjUAUPbAbLuMv+V/KSxyhGLyXaAd5XI/y0fWcE4qkcIqxpiMNkOqFjHB3dAw3ZerGqIwWQ7IHaC0P8tHyAOSJgsiFUNMZgyB0BDAMTGpoYYjNMBvGZy/4Obhf9rBEthlSfWAba54v+zFwj8F7KWxSqP0wEZcwXBhm94y/a/+wg3Rmon5ABxJ5n/JSv5/2+Fquk8yIOhBoRxOiB5GsSCzdB4BmGQo2A+weUAUMhFdAn9X/mUHSwHc8Ck01xwNcgYbxQkTRH6v/41G9wiEAYZDIqagqX8cLGJp7j+W6SJ/7fNFv8//yYHinoQ7j3K/V/RF3tUEkyEoMKmbisvioGbkdjIeOsnVH7/Me7/OlGSWM2FYYIOgGGQD2de4kSxABdeco/jv2+dCFZz0DHRDoDhCSe4sFoKw0sfsONM8dgwyQ5YeBszjtExNn24MNEOAKWF5l3AtIAWz+gYlOonn+UiGPcwTNABoOAEZcl1r6C5ASlbYsVIDgTVF6DyAJu5MIzXAaCEBEpQKBYA8cI72KNh5RO2/yufQfI/DIMcDionQNkamx04HQBy/cZ3qGUAKApAJSLIsB5g6QgTB5UVeYsgxS3IxyA2sj5QtGx4w4Y1cWJ1ACi+YZo3v2cFFy6gQgZZDaGiGJQGQOUAcpnhXCSGoQ6rA0A+BIUAKDH51YtgDT5CDoBhP2A0rnnBDsy+3FjTA8FEiAsT6wBCeNQBZDtgwBuloFwBcwCxFQ82TLYDQNijXBRsOa5ChhhMkQOogUe6A+T/AwCeGVEWasYgbgAAAABJRU5ErkJggg==">
+  <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJRSURBVFhHY2DXl/8/kHjUAUPbAbLuMv+V/KSxyhGLyXaAd5XI/y0fWcE4qkcIqxpiMNkOqFjHB3dAw3ZerGqIwWQ7IHaC0P8tHyAOSJgsiFUNMZgyB0BDAMTGpoYYjNMBvGZy/4Obhf9rBEthlSfWAba54v+zFwj8F7KWxSqP0wEZcwXBhm94y/a/+wg3Rmon5ABxJ5n/JSv5/2+Fquk8yIOhBoRxOiB5GsSCzdB4BmGQo2A+weUAUMhFdAn9X/mUHSwHc8Ck01xwNcgYbxQkTRH6v/41G9wiEAYZDIqagqX8cLGJp7j+W6SJ/7fNFv8//yYHinoQ7j3K/V/RF3tUEkyEoMKmbisvioGbkdjIeOsnVH7/Me7/OlGSWM2FYYIOgGGQD2de4kSxABdeco/jv2+dCFZz0DHRDoDhCSe4sFoKw0sfsONM8dgwyQ5YeBszjtExNn24MNEOAKWF5l3AtIAWz+gYlOonn+UiGPcwTNABoOAEZcl1r6C5ASlbYsVIDgTVF6DyAJu5MIzXAaCEBEpQKBYA8cI72KNh5RO2/yufQfI/DIMcDionQNkamx04HQBy/cZ3qGUAKApAJSLIsB5g6QgTB5UVeYsgxS3IxyA2sj5QtGx4w4Y1cWJ1ACi+YZo3v2cFFy6gQgZZDaGiGJQGQOUAcpnhXCSGoQ6rA0A+BIUAKDH51YtgDT5CDoBhP2A0rnnBDsy+3FjTA8FEiAsT6wBCeNQBZDtgwBuloFwBcwCxFQ82TLYDQNijXBRsOa5ChhhMkQOogUe6A+T/AwCeGVEWasYgbgAAAABJRU5ErkJggg==">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #072F1F; }
+    #app-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; background: #072F1F; z-index: 1; }
+    #app-frame.is-ready { opacity: 1; }
+    #shell-boot.is-done { display: none !important; pointer-events: none !important; }
+
+    
+    #shell-boot.boot-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      background: #072F1F;
+      overflow: hidden;
+    }
+    #shell-boot .boot-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    /* Shared lockup: mark stays viewport-centered; name sits beside without shifting it */
+    #shell-boot .boot-lockup {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+      padding: 1.75rem;
+      transition: none;
+    }
+    #shell-boot .boot-mark {
+      position: relative;
+      z-index: 2;
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background: #0A3A28;
+      border: 1.5px solid #B4F105;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 200px;
+      overflow: hidden;
+      box-sizing: border-box;
+      margin: 0 auto;
+      transition: width 0.85s cubic-bezier(0.4, 0, 0.15, 1),
+                  height 0.85s cubic-bezier(0.4, 0, 0.15, 1),
+                  background-color 0.7s ease,
+                  border-color 0.7s ease,
+                  box-shadow 0.7s ease,
+                  transform 0.85s cubic-bezier(0.4, 0, 0.15, 1);
+    }
+    #shell-boot .boot-mark-stage {
+      position: relative;
+      width: 112px;
+      height: 112px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      animation: bootFrameSettle 5.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+      transform-origin: center center;
+      transition: width 0.85s cubic-bezier(0.4, 0, 0.15, 1),
+                  height 0.85s cubic-bezier(0.4, 0, 0.15, 1);
+    }
+    #shell-boot .boot-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      margin: 0;
+      padding: 0;
+    }
+    #shell-boot .boot-face-logo,
+    #shell-boot .boot-face-logo .boot-logo {
+      margin: 0 auto;
+    }
+    #shell-boot .boot-face-logo {
+      z-index: 2;
+    }
+    #shell-boot .boot-face-logo.is-on {
+      opacity: 1 !important;
+    }
+    #shell-boot .boot-logo {
+      width: 58px;
+      height: 58px;
+      display: block;
+      margin: 0 auto;
+      transform-origin: 50% 50%;
+      opacity: 0;
+      animation: bootLogoIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 3.05s forwards;
+      transition: width 0.85s cubic-bezier(0.4, 0, 0.2, 1),
+                  height 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #shell-boot .boot-logo-arm {
+      fill: #B4F105;
+    }
+    #shell-boot .boot-logo .boot-icon-hub {
+      fill: #F4EFE3;
+    }
+    #shell-boot .boot-brand-name {
+      position: absolute;
+      left: calc(50% + 56px + 0.3rem);
+      top: 50%;
+      margin: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #F4EFE3;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translateY(-50%);
+      animation: bootNameShow 0.2s linear 3.05s forwards;
+      transition: left 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #shell-boot .boot-letter {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(0.28em);
+      filter: blur(6px);
+      animation: bootLetterIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation-delay: calc(3.08s + (var(--i) * 0.07s));
+      will-change: transform, opacity, filter;
+    }
+    #shell-boot .boot-brand-name.brand-word::after {
+      content: '';
+      display: inline-block;
+      width: 0.2em;
+      height: 0.2em;
+      margin-left: 0.02em;
+      border-radius: 50%;
+      background: #B4F105;
+      vertical-align: baseline;
+      position: relative;
+      top: -0.02em;
+      opacity: 0;
+      transform: translateY(0.28em) scale(0.4);
+      filter: blur(4px);
+      transform-origin: 50% 50%;
+      animation: bootPeriodPop 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation-delay: 3.45s;
+    }
+    /* #9 slow ring motion around the mark */
+    #shell-boot .boot-spin-ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 120px;
+      height: 120px;
+      margin: -60px 0 0 -60px;
+      border-radius: 50%;
+      border: 1.5px solid transparent;
+      border-top-color: #7EB8A2;
+      border-right-color: rgba(180, 241, 5, 0.35);
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0;
+      animation: bootSpinRing 5.8s linear both;
+    }
+    #shell-boot .boot-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform-origin: 50% 55%;
+    }
+    #shell-boot .boot-face-notebook { animation: bootFaceNotebook 5.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    #shell-boot .boot-face-write { animation: bootFaceWrite 5.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    #shell-boot .boot-face-tasks { animation: bootFaceTasks 5.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    #shell-boot .boot-face-logo { animation: bootFaceLogo 5.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    #shell-boot .boot-face-notebook,
+    #shell-boot .boot-face-write,
+    #shell-boot .boot-face-tasks {
+      align-items: flex-start;
+      padding-top: 1.45rem;
+    }
+    #shell-boot .boot-glyph {
+      width: 32px;
+      height: 32px;
+      display: block;
+      overflow: visible;
+      transform-origin: 50% 50%;
+      transform-style: preserve-3d;
+    }
+    #shell-boot .boot-nb-page {
+      transform-origin: 4px 12px;
+      transform-box: fill-box;
+      transform-style: preserve-3d;
+      animation: bootNotebookPage 5.8s cubic-bezier(0.45, 0.05, 0.35, 1) both;
+    }
+    #shell-boot .boot-nb-body {
+      transform-origin: 50% 55%;
+      animation: bootNotebookBody 5.8s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+    }
+    #shell-boot .boot-pen {
+      transform-origin: 4px 20px;
+      transform-box: fill-box;
+      animation: bootPenWrite 5.8s cubic-bezier(0.4, 0.05, 0.45, 0.95) both;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35));
+    }
+    #shell-boot .boot-write-doc {
+      transform-origin: 50% 50%;
+      animation: bootWriteDoc 5.8s cubic-bezier(0.34, 1.25, 0.64, 1) both;
+    }
+    #shell-boot .boot-ink {
+      stroke: #B4F105;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      fill: none;
+      opacity: 0;
+      filter: drop-shadow(0 0 2px rgba(180, 241, 5, 0.45));
+    }
+    #shell-boot .boot-ink-1 { animation: bootInk1 5.8s linear both; }
+    #shell-boot .boot-ink-2 { animation: bootInk2 5.8s linear both; }
+    #shell-boot .boot-ink-3 { animation: bootInk3 5.8s linear both; }
+    #shell-boot .boot-check-row {
+      transform-origin: 4px 50%;
+      transform-box: fill-box;
+    }
+    #shell-boot .boot-check-row-1 { animation: bootCheckRow 5.8s cubic-bezier(0.22, 1.4, 0.36, 1) both; }
+    #shell-boot .boot-check-row-2 { animation: bootCheckRow 5.8s cubic-bezier(0.22, 1.4, 0.36, 1) 0.16s both; }
+    #shell-boot .boot-check-row-3 { animation: bootCheckRow 5.8s cubic-bezier(0.22, 1.4, 0.36, 1) 0.32s both; }
+    #shell-boot .boot-icon {
+      fill: none;
+      stroke: #B4F105;
+      stroke-width: 1.35;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    #shell-boot .boot-icon-soft { stroke: #7EB8A2; stroke-width: 1.25; }
+    #shell-boot .boot-icon-fill { fill: rgba(180, 241, 5, 0.12); stroke: #B4F105; stroke-width: 1.25; }
+    #shell-boot .boot-icon-hub { fill: #F4EFE3; stroke: none; }
+    #shell-boot .boot-draw-on {
+      stroke-dasharray: 72;
+      stroke-dashoffset: 72;
+    }
+    #shell-boot .boot-face-notebook .boot-draw-on {
+      animation: bootDrawNotebook 5.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    #shell-boot .boot-face-notebook .boot-draw-on-2 { animation-delay: 0.08s; }
+    #shell-boot .boot-face-notebook .boot-draw-on-3 { animation-delay: 0.14s; }
+    #shell-boot .boot-draw-line {
+      stroke-dasharray: 40;
+      stroke-dashoffset: 40;
+      animation: bootStrokeLine 5.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    #shell-boot .boot-draw-line-2 { animation-delay: 0.14s; }
+    #shell-boot .boot-draw-line-3 { animation-delay: 0.28s; }
+    #shell-boot .boot-pen .boot-draw-on {
+      animation: bootDrawPen 5.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    #shell-boot .boot-check {
+      stroke-dasharray: 26;
+      stroke-dashoffset: 26;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: bootCheckDraw 5.8s cubic-bezier(0.34, 1.5, 0.64, 1) both;
+    }
+    #shell-boot .boot-check-row-2 .boot-check { animation-delay: 0.12s; }
+    #shell-boot .boot-check-row-3 .boot-check { animation-delay: 0.24s; }
+    #shell-boot .boot-task-line {
+      stroke-dasharray: 20;
+      stroke-dashoffset: 20;
+      animation: bootTaskLineDraw 5.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    #shell-boot .boot-check-row-2 .boot-task-line { animation-delay: 0.12s; }
+    #shell-boot .boot-check-row-3 .boot-task-line { animation-delay: 0.24s; }
+    /* exit wipe handled below */
+    /* Captions live inside the circle, under the morph icon */
+    #shell-boot .boot-captions {
+      position: absolute;
+      left: calc(50% - 0.5px);
+      top: auto;
+      bottom: 0.85rem;
+      transform: translateX(-50%);
+      width: 5.6rem;
+      min-height: 1.7rem;
+      pointer-events: none;
+      z-index: 5;
+      animation: bootCaptionsLife 5.8s ease-in-out both;
+    }
+    #shell-boot .boot-caption {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 100%;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-size: 0.58rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1.25;
+      text-align: center;
+      color: rgba(244, 239, 227, 0.78);
+      white-space: normal;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(2px);
+    }
+    #shell-boot .boot-caption-1 { animation: bootCaption1 5.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    #shell-boot .boot-caption-2 { animation: bootCaption2 5.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    #shell-boot .boot-caption-3 { animation: bootCaption3 5.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    #shell-boot.is-mark-fading .boot-captions {
+      opacity: 0;
+      transition: opacity 0.45s ease;
+    }
+    #shell-boot.is-mark-faded .boot-captions {
+      opacity: 0 !important;
+      visibility: hidden;
+    }
+    #shell-boot .boot-ripple {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 112px;
+      height: 112px;
+      margin: -56px 0 0 -56px;
+      border-radius: 50%;
+      border: 2px solid #B4F105;
+      box-sizing: border-box;
+      opacity: 0;
+      pointer-events: none;
+      animation: bootRipple 0.95s cubic-bezier(0.15, 0.75, 0.25, 1) 3.35s both;
+    }
+    #shell-boot .boot-ripple-2 {
+      border-color: #7EB8A2;
+      animation-delay: 3.45s;
+      animation-duration: 1.05s;
+    }
+    #shell-boot .boot-ripple-3 {
+      border-color: #F4EFE3;
+      animation-delay: 3.55s;
+      animation-duration: 1.15s;
+    }
+    #shell-boot .boot-drop {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      margin: -4.5px 0 0 -4.5px;
+      border-radius: 50%;
+      background: #B4F105;
+      opacity: 0;
+      pointer-events: none;
+      animation: bootDrop 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) 3.38s both;
+    }
+    #shell-boot .boot-drop:nth-child(4) { --tx: 52px; --ty: -34px; width: 10px; height: 10px; }
+    #shell-boot .boot-drop:nth-child(5) { --tx: -48px; --ty: -30px; background: #F4EFE3; animation-delay: 3.42s; width: 7px; height: 7px; }
+    #shell-boot .boot-drop:nth-child(6) { --tx: 58px; --ty: 18px; background: #7EB8A2; animation-delay: 3.4s; width: 8px; height: 8px; }
+    #shell-boot .boot-drop:nth-child(7) { --tx: -54px; --ty: 22px; animation-delay: 3.44s; width: 6px; height: 6px; }
+    #shell-boot .boot-drop:nth-child(8) { --tx: 12px; --ty: -56px; background: #7EB8A2; animation-delay: 3.4s; width: 8px; height: 8px; }
+    #shell-boot .boot-drop:nth-child(9) { --tx: -8px; --ty: 54px; background: #F4EFE3; animation-delay: 3.46s; width: 7px; height: 7px; }
+    #shell-boot .boot-drop:nth-child(10) { --tx: 44px; --ty: 46px; animation-delay: 3.43s; width: 5px; height: 5px; }
+    #shell-boot .boot-drop:nth-child(11) { --tx: -42px; --ty: 48px; background: #7EB8A2; animation-delay: 3.45s; width: 6px; height: 6px; }
+    #shell-boot .boot-flash {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 112px;
+      height: 112px;
+      margin: -56px 0 0 -56px;
+      border-radius: 50%;
+      background: #B4F105;
+      opacity: 0;
+      pointer-events: none;
+      animation: bootFlash 0.45s ease-out 3.32s both;
+    }
+
+    @keyframes bootFrameSettle {
+      0%, 52% { transform: scale(1.08); }
+      62% { transform: scale(0.99); }
+      72% { transform: scale(1.01); }
+      100% { transform: scale(1); }
+    }
+    @keyframes bootSpinRing {
+      0%, 2% { opacity: 0; transform: rotate(0deg); }
+      6% { opacity: 0.9; }
+      52% { opacity: 0.9; transform: rotate(540deg); }
+      58% { opacity: 0; transform: rotate(600deg); }
+      100% { opacity: 0; transform: rotate(600deg); }
+    }
+    @keyframes bootFaceNotebook {
+      0% { opacity: 0; transform: translateY(18px) scale(0.62) rotate(-14deg); }
+      3% { opacity: 1; transform: translateY(-3px) scale(1.04) rotate(2deg); }
+      5% { transform: translateY(1px) scale(0.98) rotate(-1deg); }
+      7% { transform: translateY(0) scale(1) rotate(0deg); }
+      11% { transform: translateY(-1px) scale(1.01) rotate(0.5deg); }
+      15% { transform: translateY(0) scale(1) rotate(0deg); }
+      19% { opacity: 1; transform: translateY(-1px) scale(1.02) rotate(2deg); }
+      24% { opacity: 0; transform: translateY(-16px) scale(0.72) rotate(10deg); }
+      100% { opacity: 0; transform: translateY(-16px) scale(0.72) rotate(10deg); }
+    }
+    @keyframes bootFaceWrite {
+      0%, 16% { opacity: 0; transform: translate(14px, 10px) scale(0.62) rotate(18deg); }
+      19% { opacity: 1; transform: translate(-2px, -2px) scale(1.04) rotate(-2deg); }
+      22% { transform: translate(0, 0) scale(1) rotate(0deg); }
+      28% { transform: translate(0, -1px) scale(1.01); }
+      34% { transform: translate(0, 0) scale(1); }
+      38% { opacity: 1; transform: translate(-2px, -2px) scale(1.02) rotate(-2deg); }
+      43% { opacity: 0; transform: translate(-14px, -10px) scale(0.7) rotate(-14deg); }
+      100% { opacity: 0; transform: translate(-14px, -10px) scale(0.7) rotate(-14deg); }
+    }
+    @keyframes bootFaceTasks {
+      0%, 34% { opacity: 0; transform: translateY(16px) scale(0.62); }
+      37% { opacity: 1; transform: translateY(-3px) scale(1.05); }
+      40% { transform: translateY(1px) scale(0.98); }
+      42% { transform: translateY(0) scale(1); }
+      48% { transform: translateY(-1px) scale(1.01); }
+      52% { transform: translateY(0) scale(1); }
+      54% { opacity: 1; transform: translateY(-2px) scale(1.02); }
+      59% { opacity: 0; transform: translateY(-14px) scale(0.72); }
+      100% { opacity: 0; transform: translateY(-14px) scale(0.72); }
+    }
+    @keyframes bootFaceLogo {
+      0%, 46% { opacity: 0; transform: scale(0.72) rotate(-12deg); }
+      52% { opacity: 1; transform: scale(1.04) rotate(3deg); }
+      58% { transform: scale(0.98) rotate(-1deg); }
+      62% { transform: scale(1) rotate(0deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    @keyframes bootNotebookBody {
+      0% { transform: rotate(-14deg) scale(0.85) translateY(6px); }
+      4% { transform: rotate(2deg) scale(1.05) translateY(-2px); }
+      7% { transform: rotate(0deg) scale(1) translateY(0); }
+      12% { transform: rotate(-1deg) scale(1.01); }
+      16% { transform: rotate(0deg) scale(1); }
+      20% { transform: rotate(4deg) scale(0.98) translateY(-1px); }
+      24% { transform: rotate(8deg) scale(0.9) translateY(-4px); }
+      100% { transform: rotate(8deg) scale(0.9) translateY(-4px); }
+    }
+    @keyframes bootNotebookPage {
+      0%, 6% { transform: rotateY(0deg) translateZ(0); opacity: 1; }
+      8% { transform: rotateY(-12deg) translateZ(2px); }
+      11% { transform: rotateY(-55deg) translateZ(4px); opacity: 0.95; }
+      14% { transform: rotateY(-110deg) translateZ(3px); opacity: 0.7; }
+      17% { transform: rotateY(-160deg) translateZ(1px); opacity: 0.15; }
+      19% { transform: rotateY(-175deg); opacity: 0; }
+      100% { transform: rotateY(-175deg); opacity: 0; }
+    }
+    @keyframes bootWriteDoc {
+      0%, 16% { transform: scale(0.88) translateY(6px) rotate(-3deg); }
+      20% { transform: scale(1.04) translateY(-2px) rotate(1deg); }
+      23% { transform: scale(1) translateY(0) rotate(0deg); }
+      36% { transform: scale(1) translateY(0) rotate(0deg); }
+      42% { transform: scale(0.9) translateY(-4px) rotate(-2deg); }
+      100% { transform: scale(0.9) translateY(-4px) rotate(-2deg); }
+    }
+    /* Pen tip writes each line leftÃ¢ÂÂright, then lifts to next */
+    @keyframes bootPenWrite {
+      0%, 18% { opacity: 0; transform: translate(14px, -12px) rotate(-35deg) scale(0.75); }
+      20% { opacity: 1; transform: translate(8px, -6px) rotate(-18deg) scale(1); }
+      22% { transform: translate(-2px, 0px) rotate(-4deg); }
+      24.5% { transform: translate(8px, 0.5px) rotate(2deg); }
+      25.5% { transform: translate(-1px, 0px) rotate(-6deg) translateY(-3px); }
+      27% { transform: translate(-2px, 4px) rotate(-3deg); }
+      29.5% { transform: translate(9px, 4.5px) rotate(3deg); }
+      30.5% { transform: translate(-1px, 4px) rotate(-5deg) translateY(-3px); }
+      32% { transform: translate(-2px, 8px) rotate(-2deg); }
+      34.5% { transform: translate(7px, 8.5px) rotate(2deg); }
+      36% { transform: translate(2px, 7px) rotate(-8deg); }
+      39% { opacity: 1; transform: translate(12px, -10px) rotate(-28deg) scale(0.9); }
+      43% { opacity: 0; transform: translate(20px, -18px) rotate(-40deg) scale(0.6); }
+      100% { opacity: 0; transform: translate(20px, -18px) rotate(-40deg) scale(0.6); }
+    }
+    @keyframes bootInk1 {
+      0%, 21.5% { stroke-dasharray: 12; stroke-dashoffset: 12; opacity: 0; }
+      22% { opacity: 1; }
+      24.5% { stroke-dashoffset: 0; opacity: 1; }
+      40% { opacity: 1; }
+      44% { opacity: 0; }
+      100% { opacity: 0; stroke-dashoffset: 0; }
+    }
+    @keyframes bootInk2 {
+      0%, 26.5% { stroke-dasharray: 14; stroke-dashoffset: 14; opacity: 0; }
+      27% { opacity: 1; }
+      29.5% { stroke-dashoffset: 0; opacity: 1; }
+      40% { opacity: 1; }
+      44% { opacity: 0; }
+      100% { opacity: 0; stroke-dashoffset: 0; }
+    }
+    @keyframes bootInk3 {
+      0%, 31.5% { stroke-dasharray: 11; stroke-dashoffset: 11; opacity: 0; }
+      32% { opacity: 1; }
+      34.5% { stroke-dashoffset: 0; opacity: 1; }
+      40% { opacity: 1; }
+      44% { opacity: 0; }
+      100% { opacity: 0; stroke-dashoffset: 0; }
+    }
+    @keyframes bootCheckRow {
+      0%, 36% { opacity: 0; transform: translateX(-18px) scale(0.6); }
+      39% { opacity: 1; transform: translateX(4px) scale(1.15); }
+      42% { transform: translateX(-1px) scale(0.97); }
+      44% { transform: translateX(0) scale(1); }
+      52% { opacity: 1; transform: translateX(0) scale(1); }
+      56% { opacity: 1; transform: translateX(3px) scale(1.04); }
+      59% { opacity: 0; transform: translateX(14px) scale(0.75); }
+      100% { opacity: 0; transform: translateX(14px) scale(0.75); }
+    }
+    @keyframes bootDrawNotebook {
+      0%, 2% { stroke-dashoffset: 72; }
+      10% { stroke-dashoffset: 0; }
+      20% { stroke-dashoffset: 0; opacity: 1; }
+      26% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes bootDrawPen {
+      0%, 18% { stroke-dashoffset: 72; }
+      24% { stroke-dashoffset: 0; }
+      38% { stroke-dashoffset: 0; opacity: 1; }
+      44% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes bootStrokeLine {
+      0%, 22% { stroke-dashoffset: 40; }
+      27% { stroke-dashoffset: 0; }
+      38% { stroke-dashoffset: 0; opacity: 1; }
+      44% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes bootCheckDraw {
+      0%, 38% { stroke-dashoffset: 26; opacity: 0; transform: scale(0.45); }
+      40% { opacity: 1; transform: scale(0.7); }
+      43% { stroke-dashoffset: 0; opacity: 1; transform: scale(1.05); }
+      45% { transform: scale(1.55); }
+      48% { transform: scale(0.88); }
+      50% { transform: scale(1.08); }
+      52% { transform: scale(1); }
+      55% { opacity: 1; transform: scale(1); }
+      60% { opacity: 0; transform: scale(0.75); }
+      100% { opacity: 0; transform: scale(0.75); }
+    }
+    @keyframes bootTaskLineDraw {
+      0%, 38% { stroke-dashoffset: 20; opacity: 0; }
+      42% { opacity: 1; }
+      48% { stroke-dashoffset: 0; opacity: 1; }
+      54% { opacity: 1; }
+      60% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes bootCaption1 {
+      0%, 1% { opacity: 0; transform: translateX(-50%) translateY(2px); }
+      4% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      17% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      22% { opacity: 0; transform: translateX(-50%) translateY(-1px); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-1px); }
+    }
+    @keyframes bootCaption2 {
+      0%, 18% { opacity: 0; transform: translateX(-50%) translateY(2px); }
+      21% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      35% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      40% { opacity: 0; transform: translateX(-50%) translateY(-1px); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-1px); }
+    }
+    @keyframes bootCaption3 {
+      0%, 36% { opacity: 0; transform: translateX(-50%) translateY(2px); }
+      39% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      50% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      55% { opacity: 0; transform: translateX(-50%) translateY(-1px); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-1px); }
+    }
+    @keyframes bootCaptionsLife {
+      0%, 52% { opacity: 1; }
+      58%, 100% { opacity: 0; }
+    }
+    @keyframes bootLogoIn {
+      0% { opacity: 0; transform: scale(0.7) rotate(-10deg); }
+      55% { opacity: 1; transform: scale(1.04) rotate(2deg); }
+      78% { transform: scale(0.99) rotate(-0.5deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    @keyframes bootMarkCollapse {
+      0% {
+        width: 112px;
+        height: 112px;
+        background-color: #0A3A28;
+        border-color: #B4F105;
+        box-shadow: 0 0 0 0 rgba(180, 241, 5, 0.35);
+        transform: scale(1);
+      }
+      40% {
+        width: 72px;
+        height: 72px;
+        background-color: rgba(10, 58, 40, 0.55);
+        border-color: rgba(180, 241, 5, 0.65);
+        box-shadow: 0 0 0 6px rgba(180, 241, 5, 0.12);
+        transform: scale(0.92);
+      }
+      100% {
+        width: 40px;
+        height: 40px;
+        background-color: transparent;
+        border-color: transparent;
+        box-shadow: 0 0 0 0 transparent;
+        transform: scale(1);
+      }
+    }
+    @keyframes bootNameShow {
+      to { opacity: 1; }
+    }
+    @keyframes bootLetterIn {
+      0% { opacity: 0; transform: translateY(0.32em); filter: blur(6px); }
+      68% { opacity: 1; transform: translateY(-0.1em); filter: blur(0); }
+      100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+    @keyframes bootPeriodPop {
+      0% { opacity: 0; transform: translateY(0.28em) scale(0.4); filter: blur(4px); }
+      55% { opacity: 1; transform: translateY(-0.06em) scale(1.4); filter: blur(0); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    @keyframes bootLetterCollapse {
+      0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+      100% { opacity: 0; transform: translateX(-0.55em) translateY(0.05em) scale(0.65); filter: blur(5px); }
+    }
+    @keyframes bootLogoCollapse {
+      0% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
+      55% { opacity: 0.85; transform: scale(0.78) rotate(8deg); filter: blur(2px); }
+      100% { opacity: 0; transform: scale(0.35) rotate(18deg); filter: blur(7px); }
+    }
+    @keyframes bootExitCurtain {
+      0% { clip-path: inset(0 0% 0 0); }
+      100% { clip-path: inset(0 0% 0 100%); }
+    }
+    #shell-boot.is-collapsing .boot-letter {
+      animation: bootLetterCollapse 0.36s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+      animation-delay: calc((3 - var(--i)) * 0.05s) !important;
+    }
+    #shell-boot.is-collapsing .boot-brand-name.brand-word::after {
+      animation: bootLetterCollapse 0.3s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+      animation-delay: 0s !important;
+    }
+    #shell-boot.is-collapsing .boot-logo {
+      animation: bootLogoCollapse 0.4s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+      animation-delay: 0.06s !important;
+    }
+    #shell-boot.is-collapsing .boot-face-logo {
+      opacity: 1 !important;
+    }
+    #shell-boot.is-collapsing .boot-brand-name {
+      transition: opacity 0.18s ease 0.3s;
+    }
+    #shell-boot.is-exiting {
+      pointer-events: none;
+      animation: bootExitCurtain 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+    #shell-boot.is-exiting .boot-brand-name,
+    #shell-boot.is-exiting .boot-logo,
+    #shell-boot.is-exiting .boot-face-logo,
+    #shell-boot.is-exiting .boot-captions,
+    #shell-boot.is-exiting .boot-progress,
+    #shell-boot.is-exiting .boot-spin-ring,
+    #shell-boot.is-exiting .boot-ripple,
+    #shell-boot.is-exiting .boot-drop,
+    #shell-boot.is-exiting .boot-flash {
+      opacity: 0 !important;
+      transition: opacity 0.2s ease;
+    }
+    @keyframes bootRipple {
+      0% { opacity: 0.85; transform: scale(0.85); }
+      100% { opacity: 0; transform: scale(2.6); }
+    }
+    @keyframes bootDrop {
+      0% { opacity: 0; transform: translate(0, 0) scale(0.35); }
+      18% { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.15); }
+    }
+    @keyframes bootFlash {
+      0% { opacity: 0.45; transform: scale(0.7); }
+      100% { opacity: 0; transform: scale(1.5); }
+    }
+    #shell-boot .boot-lockup.is-brand-settled {
+      transform: translateX(var(--brand-shift, 0px));
+      transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* Finale: circle collapses; logo scales down from morph size */
+    #shell-boot.is-mark-fading .boot-logo {
+      width: 40px;
+      height: 40px;
+    }
+    #shell-boot.is-mark-faded .boot-mark-stage {
+      width: 40px;
+      height: 40px;
+      animation: none;
+    }
+    #shell-boot.is-mark-faded .boot-mark {
+      width: 40px;
+      height: 40px;
+      background-color: transparent;
+      border-color: transparent;
+      box-shadow: 0 0 0 0 transparent;
+      overflow: visible;
+      transform: scale(1);
+    }
+    #shell-boot.is-mark-faded .boot-logo {
+      width: 40px;
+      height: 40px;
+    }
+    #shell-boot.is-mark-faded .boot-brand-name {
+      left: calc(50% + 20px + 0.28rem);
+    }
+    #shell-boot.is-mark-faded .boot-spin-ring,
+    #shell-boot.is-mark-faded .boot-progress,
+    #shell-boot.is-mark-faded .boot-ripple,
+    #shell-boot.is-mark-faded .boot-drop,
+    #shell-boot.is-mark-faded .boot-flash {
+      opacity: 0 !important;
+      transition: opacity 0.45s ease;
+      pointer-events: none;
+    }
+    /* While collapsing, ring draws inward before vanishing */
+    #shell-boot .boot-lockup.is-branded:not(.is-collapsing) .boot-mark {
+      box-shadow: inset 0 0 0 0 transparent;
+    }
+    #shell-boot.is-mark-fading .boot-mark {
+      animation: bootMarkCollapse 0.85s cubic-bezier(0.4, 0, 0.15, 1) forwards;
+    }
+    @media (max-width: 560px) {
+      #shell-boot .boot-lockup {
+        padding: 0.75rem;
+        width: min(100vw - 1.5rem, 100%);
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      #shell-boot .boot-mark-stage,
+      #shell-boot .boot-mark {
+        width: 100px;
+        height: 100px;
+      }
+      #shell-boot .boot-glyph {
+        width: 28px;
+        height: 28px;
+      }
+      #shell-boot .boot-logo {
+        width: 50px;
+        height: 50px;
+      }
+      #shell-boot .boot-brand-name {
+        font-size: clamp(1.35rem, 7.2vw, 1.75rem);
+        letter-spacing: 0.02em;
+        left: calc(50% + 50px + 0.24rem);
+      }
+      #shell-boot .boot-face-notebook,
+      #shell-boot .boot-face-write,
+      #shell-boot .boot-face-tasks {
+        padding-top: 1.25rem;
+        will-change: transform, opacity;
+      }
+      #shell-boot .boot-captions {
+        bottom: 0.95rem;
+      }
+      #shell-boot .boot-caption {
+        font-size: 0.65rem;
+      }
+      #shell-boot.is-mark-fading .boot-logo,
+      #shell-boot.is-mark-faded .boot-logo {
+        width: 36px;
+        height: 36px;
+      }
+      #shell-boot.is-mark-faded .boot-mark-stage,
+      #shell-boot.is-mark-faded .boot-mark {
+        width: 36px;
+        height: 36px;
+      }
+      #shell-boot.is-mark-faded .boot-brand-name {
+        left: calc(50% + 18px + 0.22rem);
+      }
+      #shell-boot .boot-spin-ring {
+        width: 108px;
+        height: 108px;
+        margin: -54px 0 0 -54px;
+      }
+    }
+    /* Return visit / reduced motion: skip morph, show logo + name lockup only */
+    #shell-boot.is-boot-brief .boot-face-notebook,
+    #shell-boot.is-boot-brief .boot-face-write,
+    #shell-boot.is-boot-brief .boot-face-tasks,
+    #shell-boot.is-boot-brief .boot-spin-ring,
+    #shell-boot.is-boot-brief .boot-progress,
+    #shell-boot.is-boot-brief .boot-captions,
+    #shell-boot.is-boot-brief .boot-ripple,
+    #shell-boot.is-boot-brief .boot-drop,
+    #shell-boot.is-boot-brief .boot-flash {
+      display: none !important;
+      animation: none !important;
+      opacity: 0 !important;
+    }
+    #shell-boot.is-boot-brief .boot-mark-stage {
+      animation: none !important;
+    }
+    #shell-boot.is-boot-brief .boot-face-logo {
+      opacity: 1 !important;
+      animation: none !important;
+    }
+    #shell-boot.is-boot-brief .boot-logo {
+      opacity: 1 !important;
+      animation: none !important;
+      transform: none;
+      filter: none;
+    }
+    #shell-boot.is-boot-brief .boot-brand-name {
+      opacity: 1 !important;
+      animation: none !important;
+      /* Keep vertical centering so the name sits beside the logo */
+      transform: translateY(-50%) !important;
+      filter: none;
+    }
+    #shell-boot.is-boot-brief .boot-letter,
+    #shell-boot.is-boot-brief .boot-brand-name.brand-word::after {
+      opacity: 1 !important;
+      animation: none !important;
+      transform: none !important;
+      filter: none !important;
+    }
+    #shell-boot.is-boot-brief .boot-lockup.is-brand-settled {
+      transition: none;
+    }
+    @keyframes bootBriefLockupExit {
+      0% { opacity: 1; filter: blur(0px); transform: translateX(var(--brand-shift, 0px)) scale(1); }
+      100% { opacity: 0; filter: blur(14px); transform: translateX(var(--brand-shift, 0px)) scale(0.94); }
+    }
+    @keyframes bootBriefLogoSpin {
+      0% { opacity: 1; filter: blur(0px); transform: rotate(0deg) scale(1); }
+      100% { opacity: 0; filter: blur(12px); transform: rotate(150deg) scale(0.82); }
+    }
+    #shell-boot.is-boot-brief.is-brief-exiting .boot-lockup {
+      animation: bootBriefLockupExit 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    #shell-boot.is-boot-brief.is-brief-exiting .boot-logo {
+      animation: bootBriefLogoSpin 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    }
+    #shell-boot.is-boot-brief.is-brief-exiting .boot-brand-name {
+      transform: translateY(-50%) !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #shell-boot .boot-mark-stage,
+      #shell-boot .boot-lockup,
+      #shell-boot .boot-face,
+      #shell-boot .boot-brand-name,
+      #shell-boot .boot-letter,
+      #shell-boot .boot-logo,
+      #shell-boot .boot-spin-ring,
+      #shell-boot .boot-progress,
+      #shell-boot .boot-caption,
+      #shell-boot .boot-nb-page,
+      #shell-boot .boot-nb-body,
+      #shell-boot .boot-pen,
+      #shell-boot .boot-write-doc,
+      #shell-boot .boot-check-row,
+      #shell-boot .boot-check,
+      #shell-boot .boot-ink {
+        animation: none !important;
+        transform: none !important;
+        filter: none !important;
+      }
+      #shell-boot .boot-face-logo,
+      #shell-boot .boot-brand-name,
+      #shell-boot .boot-letter,
+      #shell-boot .boot-brand-name.brand-word::after,
+      #shell-boot .boot-logo { opacity: 1 !important; }
+      #shell-boot .boot-mark {
+        background-color: transparent !important;
+        border-color: transparent !important;
+        width: 40px !important;
+        height: 40px !important;
+      }
+      #shell-boot .boot-mark-stage {
+        width: 40px !important;
+        height: 40px !important;
+      }
+      #shell-boot .boot-logo {
+        width: 40px !important;
+        height: 40px !important;
+        opacity: 1 !important;
+      }
+      #shell-boot .boot-face-notebook,
+      #shell-boot .boot-face-write,
+      #shell-boot .boot-face-tasks,
+      #shell-boot .boot-progress,
+      #shell-boot .boot-spin-ring { opacity: 0 !important; }
+      #shell-boot .boot-ripple,
+      #shell-boot .boot-drop,
+      #shell-boot .boot-flash { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div id="shell-boot" class="boot-screen" role="status" aria-label="Loading">
+    <div class="boot-stack">
+      <div class="boot-lockup">
+        <div class="boot-mark-stage">
+          <span class="boot-ripple boot-ripple-1" aria-hidden="true"></span>
+          <span class="boot-ripple boot-ripple-2" aria-hidden="true"></span>
+          <span class="boot-ripple boot-ripple-3" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-drop" aria-hidden="true"></span>
+          <span class="boot-flash" aria-hidden="true"></span>
+          <span class="boot-spin-ring" aria-hidden="true"></span>
+
+          <div class="boot-mark">
+            <div class="boot-face boot-face-notebook" aria-hidden="true">
+              <svg class="boot-glyph" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="boot-nb-body">
+                  <path class="boot-icon boot-draw-on" d="M2 6h4M2 10h4M2 14h4M2 18h4" />
+                  <rect class="boot-icon boot-draw-on boot-draw-on-2" x="4" y="2" width="14" height="20" rx="2.5" />
+                  <path class="boot-icon boot-icon-soft boot-draw-on boot-draw-on-3" d="M8 7h6M8 11h6M8 15h4" />
+                </g>
+                <g class="boot-nb-page">
+                  <rect class="boot-icon-fill" x="5" y="3" width="12" height="18" rx="1.5" />
+                  <path class="boot-icon boot-icon-soft" d="M8 8h6M8 12h5" opacity="0.7" />
+                </g>
+              </svg>
+            </div>
+            <div class="boot-face boot-face-write" aria-hidden="true">
+              <svg class="boot-glyph" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="boot-write-doc">
+                  <path class="boot-icon boot-draw-on" d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                  <path class="boot-icon boot-icon-soft" d="M14 2v6h6" />
+                  <path class="boot-icon boot-icon-soft" d="M8 9h5M8 13h8M8 17h6" opacity="0.35" />
+                  <path class="boot-ink boot-ink-1" d="M8 9h5" />
+                  <path class="boot-ink boot-ink-2" d="M8 13h8" />
+                  <path class="boot-ink boot-ink-3" d="M8 17h6" />
+                </g>
+                <g class="boot-pen">
+                  <path class="boot-icon boot-draw-on" d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </g>
+              </svg>
+            </div>
+            <div class="boot-face boot-face-tasks" aria-hidden="true">
+              <svg class="boot-glyph" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="boot-check-row boot-check-row-3">
+                  <path class="boot-icon boot-check" d="m3 5 2 2 4-4" />
+                  <path class="boot-icon boot-icon-soft boot-task-line" d="M13 6h8" />
+                </g>
+                <g class="boot-check-row boot-check-row-2">
+                  <path class="boot-icon boot-check" d="m3 11 2 2 4-4" />
+                  <path class="boot-icon boot-icon-soft boot-task-line" d="M13 12h8" />
+                </g>
+                <g class="boot-check-row boot-check-row-1">
+                  <path class="boot-icon boot-check" d="m3 17 2 2 4-4" />
+                  <path class="boot-icon boot-icon-soft boot-task-line" d="M13 18h8" />
+                </g>
+              </svg>
+            </div>
+            <div class="boot-face boot-face-logo">
+              <svg class="boot-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <g transform="translate(50,50)">
+                  <rect class="boot-logo-arm" x="-5" y="-34" width="10" height="68" rx="5" />
+                  <rect class="boot-logo-arm" x="-5" y="-34" width="10" height="68" rx="5" transform="rotate(60)" />
+                  <rect class="boot-logo-arm" x="-5" y="-34" width="10" height="68" rx="5" transform="rotate(120)" />
+                  <circle class="boot-icon-hub" r="9" />
+                </g>
+              </svg>
+            </div>
+            <div class="boot-captions" aria-hidden="true">
+            <span class="boot-caption boot-caption-1">Record your day</span>
+            <span class="boot-caption boot-caption-2">Log your hours</span>
+            <span class="boot-caption boot-caption-3">Track your tasks</span>
+            </div>
+          </div>
+        </div>
+        <div class="boot-brand-name brand-word" aria-label="Tiyo">
+          <span class="boot-letter" style="--i:0">T</span><span class="boot-letter" style="--i:1">i</span><span class="boot-letter" style="--i:2">y</span><span class="boot-letter" style="--i:3">o</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbyk8PzPuRuE9fTJFiq0ZBubXDtkluqPZgp4XilsvwGKSVQg6pr1clCJiN5UMQDVCrKd/exec?shell=1" title="Tiyo" allow="clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  <script>
+    (function () {
+      var frame = document.getElementById('app-frame');
+      var boot = document.getElementById('shell-boot');
+      var shown = false, frameReady = false;
+      var BOOT_SEEN_KEY = 'tiyo_boot_seen';
+      var BOOT_EXIT_MS = 750, BOOT_COLLAPSE_MS = 420, BOOT_LOGO_LAND_MS = 3050;
+      var BOOT_BRIEF_EXIT_MS = 550;
+      var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      var seen = false;
+      try { seen = sessionStorage.getItem(BOOT_SEEN_KEY) === '1'; } catch (e) {}
+      var brief = seen || reduceMotion;
+      var BOOT_HOLD_MS = brief ? 500 : 6000;
+      var bootStartedAt = (window.performance && performance.now) ? performance.now() : Date.now();
+
+      function markSeen() {
+        try { sessionStorage.setItem(BOOT_SEEN_KEY, '1'); } catch (e) {}
+      }
+      function haptic(ms) {
+        try {
+          if (brief || reduceMotion) return;
+          if (navigator.vibrate) navigator.vibrate(ms || 10);
+        } catch (e) {}
+      }
+      function centerBrandNow() {
+        var lockup = boot.querySelector('.boot-lockup');
+        if (!lockup) return;
+        lockup.classList.add('is-branded');
+        var nameEl = lockup.querySelector('.boot-brand-name');
+        var nameWidth = nameEl ? Math.max(nameEl.scrollWidth, nameEl.offsetWidth, 96) : 96;
+        lockup.style.setProperty('--brand-shift', (-(nameWidth + 6) / 2) + 'px');
+        lockup.classList.add('is-brand-settled');
+      }
+      function fadeMarkAway() {
+        if (!boot || boot.classList.contains('is-mark-faded') || boot.classList.contains('is-mark-fading')) return;
+        boot.classList.add('is-mark-fading');
+        window.setTimeout(function () {
+          boot.classList.add('is-mark-faded');
+          boot.classList.remove('is-mark-fading');
+          centerBrandNow();
+        }, 850);
+      }
+
+      if (brief) {
+        boot.classList.add('is-boot-brief', 'is-mark-faded');
+        var logoFaceBrief = boot.querySelector('.boot-face-logo');
+        if (logoFaceBrief) logoFaceBrief.classList.add('is-on');
+        centerBrandNow();
+        window.requestAnimationFrame(function () { centerBrandNow(); });
+      } else {
+        [1280, 2320, BOOT_LOGO_LAND_MS].forEach(function (at) {
+          window.setTimeout(function () { haptic(10); }, at);
+        });
+        window.setTimeout(function () {
+          var logoFace = boot.querySelector('.boot-face-logo');
+          if (logoFace) logoFace.classList.add('is-on');
+          centerBrandNow();
+          window.setTimeout(fadeMarkAway, 80);
+        }, BOOT_LOGO_LAND_MS);
+      }
+
+      function finish() {
+        if (shown || !frameReady) return;
+        var elapsed = (window.performance && performance.now)
+          ? (performance.now() - bootStartedAt)
+          : BOOT_HOLD_MS;
+        var wait = Math.max(0, BOOT_HOLD_MS - elapsed);
+        window.setTimeout(function () {
+          if (shown) return;
+          shown = true;
+          markSeen();
+          frame.classList.add('is-ready');
+          if (brief) {
+            boot.classList.add('is-brief-exiting');
+            window.setTimeout(function () {
+              boot.classList.add('is-done');
+              boot.setAttribute('aria-hidden', 'true');
+            }, BOOT_BRIEF_EXIT_MS);
+            return;
+          }
+          boot.classList.add('is-collapsing');
+          window.setTimeout(function () {
+            boot.classList.add('is-exiting');
+            window.setTimeout(function () {
+              boot.classList.add('is-done');
+              boot.setAttribute('aria-hidden', 'true');
+            }, BOOT_EXIT_MS);
+          }, BOOT_COLLAPSE_MS);
+        }, wait);
+      }
+      frame.addEventListener('load', function () { frameReady = true; finish(); });
+      window.setTimeout(function () { frameReady = true; finish(); }, 12000);
+    })();
+  </script>
+</body>
+</html>
