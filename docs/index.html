@@ -30,6 +30,18 @@
       function trusted(origin) {
         return /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
       }
+      function fromAppFrame(source) {
+        var frame = document.getElementById('app-frame');
+        var target = frame && frame.contentWindow;
+        try {
+          for (var w = source, i = 0; w && i < 5; i++) {
+            if (w === target) return true;
+            if (w === w.parent) break;
+            w = w.parent;
+          }
+        } catch (e) {}
+        return false;
+      }
       // Framed pages always see env(safe-area-inset-*) as 0, so the shell measures and forwards them.
       var probe = null;
       function insets() {
@@ -56,7 +68,7 @@
       window.addEventListener('orientationchange', function () { setTimeout(sendInsets, 300); });
       window.addEventListener('message', function (event) {
         var data = event.data;
-        if (!trusted(event.origin) || !data || typeof data !== 'object' || !event.source) return;
+        if (!trusted(event.origin) || !data || typeof data !== 'object' || !event.source || !fromAppFrame(event.source)) return;
         appWindow = event.source;
         appOrigin = event.origin;
         if (data.type === 'tiyo:insets-get') {
