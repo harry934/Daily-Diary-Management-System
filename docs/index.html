@@ -25,13 +25,43 @@
     // First-party session store for the embedded app; iOS can wipe storage inside the Google frame.
     (function () {
       var KEY = 'tiyo_session';
+      var appWindow = null;
+      var appOrigin = '';
       function trusted(origin) {
         return /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
       }
+      // Framed pages always see env(safe-area-inset-*) as 0, so the shell measures and forwards them.
+      var probe = null;
+      function insets() {
+        if (!probe) {
+          probe = document.createElement('div');
+          probe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;' +
+            'padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+          document.documentElement.appendChild(probe);
+        }
+        var cs = getComputedStyle(probe);
+        return {
+          top: parseFloat(cs.paddingTop) || 0,
+          right: parseFloat(cs.paddingRight) || 0,
+          bottom: parseFloat(cs.paddingBottom) || 0,
+          left: parseFloat(cs.paddingLeft) || 0
+        };
+      }
+      function sendInsets() {
+        if (appWindow) {
+          try { appWindow.postMessage({ type: 'tiyo:insets', value: insets() }, appOrigin); } catch (e) {}
+        }
+      }
+      window.addEventListener('resize', function () { setTimeout(sendInsets, 150); });
+      window.addEventListener('orientationchange', function () { setTimeout(sendInsets, 300); });
       window.addEventListener('message', function (event) {
         var data = event.data;
         if (!trusted(event.origin) || !data || typeof data !== 'object' || !event.source) return;
-        if (data.type === 'tiyo:session-get') {
+        appWindow = event.source;
+        appOrigin = event.origin;
+        if (data.type === 'tiyo:insets-get') {
+          sendInsets();
+        } else if (data.type === 'tiyo:session-get') {
           var value = '';
           try { value = localStorage.getItem(KEY) || ''; } catch (e) {}
           event.source.postMessage({ type: 'tiyo:session', value: value }, event.origin);
@@ -59,7 +89,7 @@
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #072F1F; }
     /* The embedded app pads its own tab bar for the home indicator, so the frame stays full-bleed. */
-    #app-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; background: #F4F6F5; z-index: 1; }
+    #app-frame { position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100%; border: 0; opacity: 0; background: #F4F6F5; z-index: 1; }
     #app-frame.is-ready { opacity: 1; }
     #shell-boot.is-done { display: none !important; pointer-events: none !important; }
 
