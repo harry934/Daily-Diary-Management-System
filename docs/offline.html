@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#072F1F">
+  <title>Tiyo - Offline</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <style>
+    html, body { margin: 0; height: 100%; background: #072F1F; color: #F4EFE3; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 1.5rem;
+      box-sizing: border-box;
+    }
+    .card { max-width: 22rem; }
+    .mark {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 1.25rem;
+      border-radius: 50%;
+      background: #0A3A28;
+      border: 1.5px solid #B4F105;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mark svg { width: 44px; height: 44px; }
+    h1 { margin: 0 0 0.5rem; font-size: 1.5rem; font-weight: 800; }
+    p { margin: 0 0 1.5rem; line-height: 1.5; color: rgba(244, 239, 227, 0.78); }
+    button {
+      font: inherit;
+      font-weight: 700;
+      color: #072F1F;
+      background: #B4F105;
+      border: 0;
+      border-radius: 999px;
+      padding: 0.75rem 1.75rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(50,50)" fill="#B4F105">
+          <rect x="-5" y="-34" width="10" height="68" rx="5" />
+          <rect x="-5" y="-34" width="10" height="68" rx="5" transform="rotate(60)" />
+          <rect x="-5" y="-34" width="10" height="68" rx="5" transform="rotate(120)" />
+          <circle r="9" fill="#F4EFE3" />
+        </g>
+      </svg>
+    </div>
+    <h1>You're offline</h1>
+    <p>Tiyo needs an internet connection to load your diary. Connect to Wi-Fi or mobile data and try again.</p>
+    <button type="button" onclick="location.href='./'">Try again</button>
+  </div>
+  <script>
+    window.addEventListener('online', function () { location.href = './'; });
+  </script>
+</body>
+</html>
