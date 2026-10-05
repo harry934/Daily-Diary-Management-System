@@ -21,6 +21,29 @@
       document.addEventListener('DOMContentLoaded', apply);
     })();
   </script>
+  <script>
+    // First-party session store for the embedded app; iOS can wipe storage inside the Google frame.
+    (function () {
+      var KEY = 'tiyo_session';
+      function trusted(origin) {
+        return /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
+      }
+      window.addEventListener('message', function (event) {
+        var data = event.data;
+        if (!trusted(event.origin) || !data || typeof data !== 'object' || !event.source) return;
+        if (data.type === 'tiyo:session-get') {
+          var value = '';
+          try { value = localStorage.getItem(KEY) || ''; } catch (e) {}
+          event.source.postMessage({ type: 'tiyo:session', value: value }, event.origin);
+        } else if (data.type === 'tiyo:session-set') {
+          try {
+            if (data.value) localStorage.setItem(KEY, String(data.value));
+            else localStorage.removeItem(KEY);
+          } catch (e) {}
+        }
+      });
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Tiyo</title>
   <link rel="manifest" href="manifest.webmanifest">
