@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#072F1F">
+  <title>Install Tiyo</title>
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #072F1F; color: #F4EFE3; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      line-height: 1.55;
+      padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.25rem calc(2.5rem + env(safe-area-inset-bottom, 0px));
+    }
+    .wrap { max-width: 34rem; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 1.75rem; }
+    .mark {
+      width: 72px; height: 72px; margin: 0 auto 1rem; border-radius: 50%;
+      background: #0A3A28; border: 1.5px solid #B4F105;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mark svg { width: 36px; height: 36px; }
+    h1 { margin: 0 0 0.35rem; font-size: 1.7rem; font-weight: 800; }
+    .lead { margin: 0; color: rgba(244, 239, 227, 0.78); }
+    .tabs {
+      display: flex; gap: 0.35rem; padding: 0.3rem; margin-bottom: 1.25rem;
+      background: #0A3A28; border-radius: 999px;
+    }
+    .tab {
+      flex: 1; font: inherit; font-weight: 700; color: #F4EFE3; background: none;
+      border: 0; border-radius: 999px; padding: 0.65rem 0.5rem; cursor: pointer;
+    }
+    .tab[aria-selected="true"] { background: #B4F105; color: #072F1F; }
+    .panel[hidden] { display: none; }
+    .card { background: #F4F6F5; color: #10241A; border-radius: 1.25rem; padding: 1.25rem; margin-bottom: 1rem; }
+    .card h2 { margin: 0 0 0.25rem; font-size: 1.1rem; font-weight: 800; }
+    .card .sub { margin: 0 0 1rem; font-size: 0.9rem; color: #4F6157; }
+    ol { list-style: none; counter-reset: step; margin: 0; padding: 0; }
+    ol li { counter-increment: step; position: relative; padding: 0 0 0.95rem 2.6rem; }
+    ol li:last-child { padding-bottom: 0; }
+    ol li::before {
+      content: counter(step); position: absolute; left: 0; top: -0.05rem;
+      width: 1.8rem; height: 1.8rem; border-radius: 50%;
+      background: #072F1F; color: #B4F105; font-weight: 800; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    b { font-weight: 800; }
+    .note { font-size: 0.85rem; color: #4F6157; margin: 1rem 0 0; }
+    .btn {
+      display: block; text-align: center; text-decoration: none; font-weight: 800;
+      color: #072F1F; background: #B4F105; border-radius: 999px; padding: 0.85rem 1.25rem; margin-top: 1rem;
+    }
+    .btn.alt { background: #072F1F; color: #B4F105; }
+    .help h2 { font-size: 1.05rem; margin: 1.75rem 0 0.75rem; font-weight: 800; }
+    .help details { background: #0A3A28; border-radius: 1rem; padding: 0.85rem 1rem; margin-bottom: 0.6rem; }
+    .help summary { font-weight: 700; cursor: pointer; }
+    .help p { margin: 0.6rem 0 0; color: rgba(244, 239, 227, 0.82); font-size: 0.92rem; }
+    a { color: #B4F105; }
+    .card a:not(.btn) { color: #072F1F; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(50,50)" fill="#B4F105">
+            <rect x="-5" y="-34" width="10" height="68" rx="5" />
+            <rect x="-5" y="-34" width="10" height="68" rx="5" transform="rotate(60)" />
+            <rect x="-5" y="-34" width="10" height="68" rx="5" transform="rotate(120)" />
+            <circle r="9" fill="#F4EFE3" />
+          </g>
+        </svg>
+      </div>
+      <h1>Install Tiyo</h1>
+      <p class="lead">Put your internship diary on your home screen. It takes about a minute.</p>
+    </header>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-iphone" aria-controls="panel-iphone" aria-selected="true">iPhone</button>
+      <button class="tab" role="tab" id="tab-android" aria-controls="panel-android" aria-selected="false">Android</button>
+      <button class="tab" role="tab" id="tab-computer" aria-controls="panel-computer" aria-selected="false">Computer</button>
+    </div>
+
+    <section class="panel" id="panel-iphone" role="tabpanel" aria-labelledby="tab-iphone">
+      <div class="card">
+        <h2>iPhone or iPad</h2>
+        <p class="sub">You must use <b>Safari</b>. Chrome and other browsers on iPhone can't install apps.</p>
+        <ol>
+          <li>Open <b>Safari</b> and go to <a href="./">harry934.github.io/Daily-Diary-Management-System</a>.</li>
+          <li>Tap the <b>Share</b> button (the square with an arrow pointing up). On newer iOS versions, tap <b>•••</b> first, then <b>Share</b>.</li>
+          <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+          <li>Make sure <b>Open as Web App</b> is on (if you see it), then tap <b>Add</b>.</li>
+          <li>Close Safari and open <b>Tiyo</b> from your home screen.</li>
+          <li>Sign in or create an account. Tick <b>Keep me signed in</b> so you stay logged in.</li>
+        </ol>
+        <p class="note">PDF reports open in a preview. Tap <b>Share &gt; Save to Files</b> to keep them.</p>
+        <a class="btn" href="./">Open Tiyo in Safari</a>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-android" role="tabpanel" aria-labelledby="tab-android" hidden>
+      <div class="card">
+        <h2>Option A: Install from Chrome</h2>
+        <p class="sub">Recommended. It always stays up to date.</p>
+        <ol>
+          <li>Open <b>Chrome</b> and go to <a href="./">harry934.github.io/Daily-Diary-Management-System</a>.</li>
+          <li>Tap <b>Install app</b> when it pops up, or tap the <b>⋮</b> menu and choose <b>Add to Home screen</b> &gt; <b>Install</b>.</li>
+          <li>Open <b>Tiyo</b> from your home screen or app drawer.</li>
+          <li>Sign in or create an account. Tick <b>Keep me signed in</b>.</li>
+        </ol>
+        <a class="btn" href="./">Open Tiyo in Chrome</a>
+      </div>
+      <div class="card">
+        <h2>Option B: Download the APK</h2>
+        <p class="sub">Use this if Chrome doesn't offer to install.</p>
+        <ol>
+          <li>Tap <b>Download Tiyo.apk</b> below.</li>
+          <li>When the download finishes, tap the file to open it.</li>
+          <li>If your phone asks, allow <b>Install unknown apps</b> for your browser or Files app, then go back.</li>
+          <li>Tap <b>Install</b>, then <b>Open</b>.</li>
+        </ol>
+        <a class="btn alt" href="https://github.com/harry934/Daily-Diary-Management-System/releases/latest/download/Tiyo.apk">Download Tiyo.apk</a>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-computer" role="tabpanel" aria-labelledby="tab-computer" hidden>
+      <div class="card">
+        <h2>Windows, Mac or Chromebook</h2>
+        <p class="sub">Works in Chrome or Microsoft Edge.</p>
+        <ol>
+          <li>Open <a href="./">harry934.github.io/Daily-Diary-Management-System</a> in Chrome or Edge.</li>
+          <li>Click the <b>install</b> icon at the right end of the address bar (a screen with a down arrow).</li>
+          <li>Click <b>Install</b>. Tiyo opens in its own window and appears in your Start menu or Dock.</li>
+        </ol>
+        <p class="note">You can also just bookmark the link and use it in the browser.</p>
+        <a class="btn" href="./">Open Tiyo</a>
+      </div>
+    </section>
+
+    <div class="help">
+      <h2>Having trouble?</h2>
+      <details>
+        <summary>I don't see "Add to Home Screen" on iPhone</summary>
+        <p>Make sure you are in Safari, not Chrome or an in-app browser (like WhatsApp or Instagram). In those apps, tap the menu and choose <b>Open in Safari</b> first.</p>
+      </details>
+      <details>
+        <summary>The app shows an old version or looks wrong</summary>
+        <p>Close Tiyo completely (swipe it away in the app switcher) and open it again. If it still looks wrong, wait a few minutes and try once more.</p>
+      </details>
+      <details>
+        <summary>I keep getting signed out</summary>
+        <p>Tick <b>Keep me signed in</b> when you log in, and always open Tiyo from the home screen icon, not from a browser tab.</p>
+      </details>
+      <details>
+        <summary>It says I'm offline</summary>
+        <p>Tiyo needs an internet connection. Connect to Wi-Fi or mobile data, then tap <b>Try again</b>.</p>
+      </details>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+      function select(tab) {
+        tabs.forEach(function (t) {
+          var on = t === tab;
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        });
+      }
+      tabs.forEach(function (t) { t.addEventListener('click', function () { select(t); }); });
+      var ua = navigator.userAgent || '';
+      if (/Android/i.test(ua)) select(document.getElementById('tab-android'));
+      else if (!/iPhone|iPad|iPod/i.test(ua) && !(navigator.maxTouchPoints > 1 && /Macintosh/.test(ua))) {
+        select(document.getElementById('tab-computer'));
+      }
+    })();
+  </script>
+</body>
+</html>

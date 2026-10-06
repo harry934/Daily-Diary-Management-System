@@ -4,6 +4,8 @@ Open the app: **https://harry934.github.io/Daily-Diary-Management-System/**
 
 ## Install on your phone
 
+Step-by-step guide for iPhone, Android and computer: **https://harry934.github.io/Daily-Diary-Management-System/install.html**
+
 You need an internet connection to use the app.
 
 **Android**

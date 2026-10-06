@@ -4,7 +4,7 @@ Internship daily diary. Interns create an account, then log working days, track 
 
 **App:** https://harry934.github.io/Daily-Diary-Management-System/
 
-**Mobile:** Android APK on [Releases](https://github.com/harry934/Daily-Diary-Management-System/releases/latest), or install from the browser (Chrome **Install app**, Safari **Share > Add to Home Screen**).
+**Mobile:** Android APK on [Releases](https://github.com/harry934/Daily-Diary-Management-System/releases/latest), or install from the browser (Chrome **Install app**, Safari **Share > Add to Home Screen**). Step-by-step guide: https://harry934.github.io/Daily-Diary-Management-System/install.html
 
 See [INVITE.md](INVITE.md) for interns.
 
