@@ -6,6 +6,22 @@ Tiyo is an internship daily diary. Interns create an account, clock in and out, 
 
 **Install guide:** https://harry934.github.io/Daily-Diary-Management-System/install.html
 
+## Demo
+
+<!-- Replace GIF_URL below with the link to the demo GIF -->
+<p align="center">
+  <img src="GIF_URL" alt="Tiyo demo: signing in, logging a day, tracking tasks and downloading a report" width="720">
+</p>
+
+*Tiyo is a Dholuo word meaning "to work".*
+
+## Built with
+
+- **Google Apps Script** for the backend, sign-in and API
+- **Google Sheets** as the database, with optional per-intern report sheets
+- **HTML, CSS and JavaScript** with Bootstrap 5 for the interface
+- **GitHub Pages** for the installable web app shell, service worker and install guide
+
 ## Install the app
 
 Tiyo works in any browser and can be installed like a normal app. The [install guide](https://harry934.github.io/Daily-Diary-Management-System/install.html) has step-by-step instructions for every device. You can also open it from inside the app: **Me > Install the app** on a phone, **Install the app** in the sidebar on a computer, or the link under the sign-in form.
