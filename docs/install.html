@@ -61,10 +61,21 @@
     .help p { margin: 0.6rem 0 0; color: rgba(244, 239, 227, 0.82); font-size: 0.92rem; }
     a { color: #B4F105; }
     .card a:not(.btn) { color: #072F1F; }
+    .back {
+      display: inline-flex; align-items: center; gap: 0.3rem; margin-bottom: 1rem;
+      padding: 0.45rem 0.95rem 0.45rem 0.6rem; border-radius: 999px;
+      background: #0A3A28; color: #F4EFE3; font-weight: 700; font-size: 0.9rem; text-decoration: none;
+    }
+    .back svg { width: 18px; height: 18px; }
+    .back:focus-visible { outline: 2px solid #B4F105; outline-offset: 2px; }
   </style>
 </head>
 <body>
   <div class="wrap">
+    <a class="back" id="back-link" href="./" aria-label="Back to Tiyo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      <span>Back to Tiyo</span>
+    </a>
     <header>
       <div class="mark" aria-hidden="true">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -173,6 +184,13 @@
         });
       }
       tabs.forEach(function (t) { t.addEventListener('click', function () { select(t); }); });
+      document.getElementById('back-link').addEventListener('click', function (event) {
+        var ref = document.referrer || '';
+        if (ref.indexOf(location.origin) === 0 && history.length > 1) {
+          event.preventDefault();
+          history.back();
+        }
+      });
       var ua = navigator.userAgent || '';
       if (/Android/i.test(ua)) select(document.getElementById('tab-android'));
       else if (!/iPhone|iPad|iPod/i.test(ua) && !(navigator.maxTouchPoints > 1 && /Macintosh/.test(ua))) {
