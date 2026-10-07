@@ -66,15 +66,43 @@
       }
       // Cross-origin frames cannot ask for notification permission, so the shell shows them for the app.
       var NOTIFY_KEY = 'tiyo_notify';
+      var NOTIFY_CATS_KEY = 'tiyo_notify_cats';
       var NOTIFIED_KEY = 'tiyo_notified';
       var NOTIFIED_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+      var NOTIFY_DAILY_CAP = 4;
       function notifySupported() {
         return 'Notification' in window && 'serviceWorker' in navigator;
+      }
+      function notifyCategories() {
+        var cats = {};
+        try { cats = JSON.parse(localStorage.getItem(NOTIFY_CATS_KEY) || '{}') || {}; } catch (e) {}
+        return cats;
       }
       function notifyStatus() {
         var enabled = false;
         try { enabled = localStorage.getItem(NOTIFY_KEY) === '1'; } catch (e) {}
-        return { permission: notifySupported() ? Notification.permission : 'unsupported', enabled: enabled };
+        return {
+          permission: notifySupported() ? Notification.permission : 'unsupported',
+          enabled: enabled,
+          categories: notifyCategories()
+        };
+      }
+      function setNotifyCategories(cats) {
+        if (!cats || typeof cats !== 'object') return;
+        var clean = {};
+        ['diary', 'tasks', 'admin'].forEach(function (key) {
+          if (key in cats) clean[key] = !!cats[key];
+        });
+        try { localStorage.setItem(NOTIFY_CATS_KEY, JSON.stringify(clean)); } catch (e) {}
+      }
+      function inQuietHours(date) {
+        var minutes = date.getHours() * 60 + date.getMinutes();
+        return minutes >= 20 * 60 || minutes < 7 * 60 + 30;
+      }
+      function startOfToday() {
+        var d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
       }
       function sendNotifyStatus() {
         if (appWindow) {
@@ -143,21 +171,42 @@
           else sendNotifyStatus();
         }, showNotifyPrompt);
       }
-      function notifyFromApp(items) {
+      function clearResolvedNotifications(prefix, active) {
+        if (!prefix || !Array.isArray(active)) return;
+        navigator.serviceWorker.ready.then(function (reg) {
+          return reg.getNotifications();
+        }).then(function (list) {
+          list.forEach(function (n) {
+            if (n.tag && n.tag.indexOf(prefix) === 0 && active.indexOf(n.tag) === -1) n.close();
+          });
+        }).catch(function () {});
+      }
+      // Rules: user-chosen categories only, nothing in quiet hours, at most NOTIFY_DAILY_CAP a day, each tag once.
+      function notifyFromApp(value) {
         var status = notifyStatus();
-        if (!status.enabled || status.permission !== 'granted' || !Array.isArray(items)) return;
+        if (!status.enabled || status.permission !== 'granted' || !value || typeof value !== 'object') return;
+        var prefix = String(value.prefix || '');
+        clearResolvedNotifications(prefix, value.active);
+        var items = Array.isArray(value.items) ? value.items : [];
+        var now = new Date();
+        if (!items.length || inQuietHours(now)) return;
         var shown = {};
         try { shown = JSON.parse(localStorage.getItem(NOTIFIED_KEY) || '{}') || {}; } catch (e) {}
-        var now = Date.now();
+        var nowMs = now.getTime();
         Object.keys(shown).forEach(function (tag) {
-          if (!(now - shown[tag] < NOTIFIED_TTL_MS)) delete shown[tag];
+          if (!(nowMs - shown[tag] < NOTIFIED_TTL_MS)) delete shown[tag];
         });
+        var dayStart = startOfToday();
+        var sentToday = Object.keys(shown).filter(function (tag) { return shown[tag] >= dayStart; }).length;
+        var cats = status.categories;
         items.slice(0, 10).forEach(function (item) {
-          if (!item || typeof item !== 'object') return;
+          if (!item || typeof item !== 'object' || sentToday >= NOTIFY_DAILY_CAP) return;
           var tag = String(item.id || '').slice(0, 300);
           var title = String(item.title || '').slice(0, 140);
-          if (!tag || !title || shown[tag]) return;
-          shown[tag] = now;
+          var category = String(item.category || '');
+          if (!tag || !title || shown[tag] || (category && cats[category] === false)) return;
+          shown[tag] = nowMs;
+          sentToday += 1;
           showSystemNotification(tag, title, String(item.text || '').slice(0, 300), {
             panel: String(item.panel || ''),
             date: String(item.date || '')
@@ -196,6 +245,7 @@
           askNotifyPermission();
         } else if (data.type === 'tiyo:notify-set') {
           setNotifyEnabled(!!data.enabled);
+          setNotifyCategories(data.categories);
           sendNotifyStatus();
         } else if (data.type === 'tiyo:notify') {
           notifyFromApp(data.value);

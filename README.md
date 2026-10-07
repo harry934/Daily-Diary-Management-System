@@ -38,7 +38,7 @@ You need an internet connection to use the app.
 
 - **Today:** clock in and out, adjust times, and write what you did, one line at a time.
 - **Week and Calendar:** look back over your logged days by week or month.
-- **Tasks:** keep a to-do list with priorities and due dates.
+- **Tasks:** quick-add to-do list grouped into Overdue, Today, This week and Later, with search, subtasks, swipe to complete or delete, and a few seconds to undo.
 - **Reports:** download a PDF or export to a Google Sheet for this week, the last 4 weeks, or all weeks.
 - **Progress:** hours logged against your target, days worked this week, and programme completion.
 - **Reminders:** device notifications (turn on in **Settings > Notifications**), an in-app notification centre, and optional daily emails to help you keep your diary up to date.
