@@ -41,7 +41,7 @@ You need an internet connection to use the app.
 - **Tasks:** keep a to-do list with priorities and due dates.
 - **Reports:** download a PDF or export to a Google Sheet for this week, the last 4 weeks, or all weeks.
 - **Progress:** hours logged against your target, days worked this week, and programme completion.
-- **Reminders:** in-app notifications to help you keep your diary up to date.
+- **Reminders:** device notifications (turn on in **Settings > Notifications**), an in-app notification centre, and optional daily emails to help you keep your diary up to date.
 - **Settings:** update your profile, organisation, programme length, target hours, working days, and password.
 
 ## For interns

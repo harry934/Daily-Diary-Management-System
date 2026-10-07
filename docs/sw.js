@@ -27,6 +27,21 @@ self.addEventListener('activate', function (event) {
   );
 });
 
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  var target = event.notification.data || {};
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+      var client = list[0];
+      if (client) {
+        client.postMessage({ type: 'tiyo:notify-open', value: target });
+        return client.focus();
+      }
+      return self.clients.openWindow('./');
+    })
+  );
+});
+
 self.addEventListener('fetch', function (event) {
   var request = event.request;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) {

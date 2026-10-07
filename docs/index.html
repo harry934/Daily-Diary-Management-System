@@ -64,6 +64,114 @@
           try { appWindow.postMessage({ type: 'tiyo:insets', value: insets() }, appOrigin); } catch (e) {}
         }
       }
+      // Cross-origin frames cannot ask for notification permission, so the shell shows them for the app.
+      var NOTIFY_KEY = 'tiyo_notify';
+      var NOTIFIED_KEY = 'tiyo_notified';
+      var NOTIFIED_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+      function notifySupported() {
+        return 'Notification' in window && 'serviceWorker' in navigator;
+      }
+      function notifyStatus() {
+        var enabled = false;
+        try { enabled = localStorage.getItem(NOTIFY_KEY) === '1'; } catch (e) {}
+        return { permission: notifySupported() ? Notification.permission : 'unsupported', enabled: enabled };
+      }
+      function sendNotifyStatus() {
+        if (appWindow) {
+          try { appWindow.postMessage({ type: 'tiyo:notify-status', value: notifyStatus() }, appOrigin); } catch (e) {}
+        }
+      }
+      function setNotifyEnabled(on) {
+        try { localStorage.setItem(NOTIFY_KEY, on ? '1' : '0'); } catch (e) {}
+      }
+      function showSystemNotification(tag, title, body, data) {
+        return navigator.serviceWorker.ready.then(function (reg) {
+          return reg.showNotification(title, {
+            body: body,
+            tag: tag,
+            icon: 'icons/icon-192.png',
+            badge: 'icons/icon-192.png',
+            data: data || {}
+          });
+        });
+      }
+      function finishNotifyEnable() {
+        setNotifyEnabled(true);
+        sendNotifyStatus();
+        showSystemNotification('tiyo-enabled', 'Notifications are on', 'Tiyo will remind you about your diary and tasks here.').catch(function () {});
+      }
+      function hideNotifyPrompt() {
+        var box = document.getElementById('notify-prompt');
+        if (box) box.parentNode.removeChild(box);
+      }
+      // Safari only shows the permission prompt after a tap in the top-level page.
+      function showNotifyPrompt() {
+        hideNotifyPrompt();
+        var box = document.createElement('div');
+        box.id = 'notify-prompt';
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-label', 'Allow notifications');
+        box.innerHTML = '<p><strong>Allow notifications?</strong><span>Tiyo will remind you to save your diary and about tasks that are due.</span></p>' +
+          '<div><button type="button" data-act="no">Not now</button><button type="button" data-act="yes">Allow</button></div>';
+        box.querySelector('[data-act="no"]').addEventListener('click', function () {
+          hideNotifyPrompt();
+          sendNotifyStatus();
+        });
+        box.querySelector('[data-act="yes"]').addEventListener('click', function () {
+          hideNotifyPrompt();
+          Promise.resolve(Notification.requestPermission()).then(function () {
+            if (Notification.permission === 'granted') finishNotifyEnable();
+            else sendNotifyStatus();
+          }, sendNotifyStatus);
+        });
+        document.body.appendChild(box);
+      }
+      function askNotifyPermission() {
+        if (!notifySupported() || Notification.permission === 'denied') {
+          sendNotifyStatus();
+          return;
+        }
+        if (Notification.permission === 'granted') {
+          finishNotifyEnable();
+          return;
+        }
+        var asked;
+        try { asked = Notification.requestPermission(); } catch (e) { asked = Promise.reject(e); }
+        Promise.resolve(asked).then(function () {
+          if (Notification.permission === 'granted') finishNotifyEnable();
+          else if (Notification.permission === 'default') showNotifyPrompt();
+          else sendNotifyStatus();
+        }, showNotifyPrompt);
+      }
+      function notifyFromApp(items) {
+        var status = notifyStatus();
+        if (!status.enabled || status.permission !== 'granted' || !Array.isArray(items)) return;
+        var shown = {};
+        try { shown = JSON.parse(localStorage.getItem(NOTIFIED_KEY) || '{}') || {}; } catch (e) {}
+        var now = Date.now();
+        Object.keys(shown).forEach(function (tag) {
+          if (!(now - shown[tag] < NOTIFIED_TTL_MS)) delete shown[tag];
+        });
+        items.slice(0, 10).forEach(function (item) {
+          if (!item || typeof item !== 'object') return;
+          var tag = String(item.id || '').slice(0, 300);
+          var title = String(item.title || '').slice(0, 140);
+          if (!tag || !title || shown[tag]) return;
+          shown[tag] = now;
+          showSystemNotification(tag, title, String(item.text || '').slice(0, 300), {
+            panel: String(item.panel || ''),
+            date: String(item.date || '')
+          }).catch(function () {});
+        });
+        try { localStorage.setItem(NOTIFIED_KEY, JSON.stringify(shown)); } catch (e) {}
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', function (event) {
+          var data = event.data;
+          if (!data || data.type !== 'tiyo:notify-open' || !appWindow) return;
+          try { appWindow.postMessage({ type: 'tiyo:notify-open', value: data.value || {} }, appOrigin); } catch (e) {}
+        });
+      }
       window.addEventListener('resize', function () { setTimeout(sendInsets, 150); });
       window.addEventListener('orientationchange', function () { setTimeout(sendInsets, 300); });
       window.addEventListener('message', function (event) {
@@ -82,6 +190,15 @@
             if (data.value) localStorage.setItem(KEY, String(data.value));
             else localStorage.removeItem(KEY);
           } catch (e) {}
+        } else if (data.type === 'tiyo:notify-get') {
+          sendNotifyStatus();
+        } else if (data.type === 'tiyo:notify-permission') {
+          askNotifyPermission();
+        } else if (data.type === 'tiyo:notify-set') {
+          setNotifyEnabled(!!data.enabled);
+          sendNotifyStatus();
+        } else if (data.type === 'tiyo:notify') {
+          notifyFromApp(data.value);
         }
       });
     })();
@@ -106,6 +223,20 @@
     html.app-ready, html.app-ready body { background: #F4F6F5; }
     #app-frame.is-ready { opacity: 1; }
     #shell-boot.is-done { display: none !important; pointer-events: none !important; }
+    #notify-prompt {
+      position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 10000;
+      transform: translateX(-50%); width: min(26rem, calc(100% - 2rem)); box-sizing: border-box;
+      padding: 1rem; border-radius: 1rem; background: #072F1F; color: #F4EFE3;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    }
+    #notify-prompt p { margin: 0 0 0.85rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; line-height: 1.4; }
+    #notify-prompt p span { color: rgba(244, 239, 227, 0.78); }
+    #notify-prompt div { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    #notify-prompt button {
+      border: 0; border-radius: 999px; padding: 0.55rem 1.1rem; font: inherit; font-weight: 800; cursor: pointer;
+      background: transparent; color: #F4EFE3;
+    }
+    #notify-prompt button[data-act="yes"] { background: #B4F105; color: #072F1F; }
 
     
     #shell-boot.boot-screen {
