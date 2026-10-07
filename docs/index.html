@@ -95,10 +95,6 @@
         });
         try { localStorage.setItem(NOTIFY_CATS_KEY, JSON.stringify(clean)); } catch (e) {}
       }
-      function inQuietHours(date) {
-        var minutes = date.getHours() * 60 + date.getMinutes();
-        return minutes >= 20 * 60 || minutes < 7 * 60 + 30;
-      }
       function startOfToday() {
         var d = new Date();
         d.setHours(0, 0, 0, 0);
@@ -181,7 +177,7 @@
           });
         }).catch(function () {});
       }
-      // Rules: user-chosen categories only, nothing in quiet hours, at most NOTIFY_DAILY_CAP a day, each tag once.
+      // Rules: user-chosen categories only, at most NOTIFY_DAILY_CAP a day, each tag once.
       function notifyFromApp(value) {
         var status = notifyStatus();
         if (!status.enabled || status.permission !== 'granted' || !value || typeof value !== 'object') return;
@@ -189,7 +185,7 @@
         clearResolvedNotifications(prefix, value.active);
         var items = Array.isArray(value.items) ? value.items : [];
         var now = new Date();
-        if (!items.length || inQuietHours(now)) return;
+        if (!items.length) return;
         var shown = {};
         try { shown = JSON.parse(localStorage.getItem(NOTIFIED_KEY) || '{}') || {}; } catch (e) {}
         var nowMs = now.getTime();
