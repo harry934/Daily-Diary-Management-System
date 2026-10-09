@@ -40,10 +40,10 @@ You need an internet connection to use the app.
 - **Week and Calendar:** look back over your logged days by week or month.
 - **Tasks:** every task is a title plus at least one subtask. Tick subtasks right on the card; the task completes by itself when the last one is ticked (with a few seconds to undo) and is removed 2 days later. Active tasks are grouped into Overdue, Today, This week and Later, with search.
 - **Reports:** download a PDF or export to a Google Sheet for this week, the last 4 weeks, or all weeks.
-- **Progress:** hours logged against your target, projected completion from your real pace, Week 9 evaluation checkpoint (configurable), and a what-if hrs/day slider.
-- **Report for AI:** on Summary, paste your lecturer’s rubric, pick weeks, and copy a prompt with your diary and tasks for ChatGPT or similar tools.
-- **Reminders:** device notifications (turn on in **Settings > Notifications**), an in-app notification centre, and optional emails for missing diary days, tasks, and weekly off-track progress alerts.
-- **Settings:** update your profile, organisation, programme length, target hours, evaluation week, working days, and password.
+- **Progress:** hours logged against your target on the dashboard and Summary.
+- **Report for AI:** on **Summary** (full rubric) or **Week** on mobile, pick weeks and what to include, then copy a prompt with your diary and tasks for ChatGPT or similar tools.
+- **Reminders:** device notifications (turn on in **Settings > Notifications**), an in-app notification centre, and optional emails for missing diary days and tasks.
+- **Settings:** update your profile, organisation, programme length, target hours, working days, and password.
 
 ## For interns
 

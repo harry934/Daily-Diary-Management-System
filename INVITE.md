@@ -18,7 +18,7 @@ You need an internet connection to use the app.
 
 ## Create an account
 
-Enter your name, username, organisation, optional email, password (8+ characters with at least one capital letter), programme start date, number of weeks (default 14), target hours (default 400), evaluation week (default 9), and working days. After you create the account you can open your dashboard right away.
+Enter your name, username, organisation, optional email, password (8+ characters with at least one capital letter), programme start date, number of weeks (default 14), target hours (default 400), and working days. After you create the account you can open your dashboard right away.
 
 ## Log days and tasks
 
@@ -28,10 +28,10 @@ Record time in/out and assignments. Track tasks with priorities and due dates.
 
 Use **Download PDF** or **Export to Sheet**. Pick specific weeks (This week / Last 4 / All), then download. For sheet export, paste your sheet URL when prompted (`DAILY-DIARY:your_username` in A1, shared as Editor with the app owner).
 
-On **Summary**, open **Report for AI**: paste or edit your lecturer’s rubric, choose This week / Last 4 / All, then **Copy prompt** and paste it into ChatGPT (or another AI tool) with your diary evidence and tasks.
+On **Summary**, open **Report for AI**: paste or edit your lecturer’s rubric, choose This week / Last 4 / All, then **Copy prompt** and paste it into ChatGPT (or another AI tool) with your diary evidence and tasks. On a phone, the same tool is on the **Week** tab (link to Summary to edit the rubric).
 
-The dashboard tracks progress toward your **target hours** (default 400) over your chosen weeks (default 14), projects a completion date from your logged pace, and shows whether you are on track for the evaluation week checkpoint (default Week 9).
+The dashboard tracks progress toward your **target hours** (default 400) over your chosen weeks (default 14).
 
 ## Settings
 
-Open **Settings** in the sidebar to edit your profile, organisation, programme weeks/hours/evaluation week/working days, or password. Add an email and turn on **Email reminders** for daily diary/task alerts and weekly off-track progress updates. You can also delete your account there (password required). Saving profile changes also requires your current password when you change username or email.
+Open **Settings** in the sidebar to edit your profile, organisation, programme weeks/hours/working days, or password. Add an email and turn on **Email reminders** for daily diary and task alerts. You can also delete your account there (password required). Saving profile changes also requires your current password when you change username or email.
