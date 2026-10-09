@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tiyo Tasks mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #072F1F; --forest-dark: #051C12; --lime: #B4F105; --bg: #F4F6F5;
+    --text: #0B130F; --muted: #6C7E75; --line: #E9EFEF; --red: #B91C1C; --red-bg: #FEE2E2;
+    --amber: #A16207; --amber-bg: #FEF9C3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #DCE3DF; color: var(--text); }
+  .stage { display: flex; gap: 40px; justify-content: center; align-items: flex-start; padding: 32px 20px 60px; flex-wrap: wrap; }
+
+  /* Phone frame */
+  .phone { position: relative; width: 390px; height: 820px; border-radius: 44px; background: var(--bg); overflow: hidden; border: 10px solid #111; }
+  .screen { position: absolute; inset: 0; overflow-y: auto; padding: 18px 16px 150px; }
+  .status { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; padding: 2px 10px 12px; }
+
+  .head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .head h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  .head p { margin: 2px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .head p b { color: var(--red); }
+  .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: #fff; display: grid; place-items: center; cursor: pointer; color: var(--forest); }
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .search { display: none; align-items: center; gap: 8px; background: #fff; border-radius: 14px; padding: 0 14px; margin-bottom: 12px; color: var(--muted); }
+  .search.on { display: flex; }
+  .search input { flex: 1; border: 0; outline: 0; min-height: 44px; font: inherit; font-size: 14px; background: transparent; }
+
+  .tabs { display: flex; background: #E4EAE6; border-radius: 12px; padding: 4px; margin-bottom: 6px; }
+  .tab { flex: 1; border: 0; background: none; padding: 9px; border-radius: 9px; font: inherit; font-size: 13px; font-weight: 800; color: var(--muted); cursor: pointer; }
+  .tab.on { background: #fff; color: var(--forest); }
+  .tab span { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--line); font-size: 11px; line-height: 18px; }
+  .tab.on span { background: var(--lime); }
+
+  .group { margin-top: 18px; }
+  .group-title { display: flex; align-items: center; gap: 6px; margin: 0 0 8px 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .group-title.overdue { color: var(--red); }
+
+  .card { background: #fff; border-radius: 18px; padding: 14px 14px 8px; margin-bottom: 10px; transition: opacity .35s, transform .35s; }
+  .card.leaving { opacity: 0; transform: scale(.96); }
+  .card-top { display: flex; align-items: flex-start; gap: 10px; }
+  .card-title { flex: 1; font-size: 16px; font-weight: 800; line-height: 1.3; }
+  .more { width: 32px; height: 32px; margin: -4px -4px 0 0; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+  .card-meta { display: flex; align-items: center; gap: 10px; margin: 8px 0 10px; }
+  .due { font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+  .due.overdue { background: var(--red-bg); color: var(--red); }
+  .due.today { background: var(--amber-bg); color: var(--amber); }
+  .bar { flex: 1; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--forest); border-radius: 999px; transition: width .3s; }
+  .count { font-size: 12px; font-weight: 800; color: var(--muted); }
+
+  .sub { display: flex; align-items: center; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--line); cursor: pointer; user-select: none; }
+  .circle { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #B8C6BE; display: grid; place-items: center; transition: all .2s; }
+  .circle svg { width: 14px; height: 14px; stroke: var(--forest); stroke-width: 3; opacity: 0; }
+  .sub.done .circle { background: var(--lime); border-color: var(--lime); }
+  .sub.done .circle svg { opacity: 1; }
+  .sub-text { font-size: 14px; font-weight: 600; }
+  .sub.done .sub-text { color: var(--muted); text-decoration: line-through; }
+  .done-toggle { width: 100%; border: 0; border-top: 1px solid var(--line); background: none; padding: 9px 2px 6px; text-align: left; font: inherit; font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer; }
+  .card.complete .card-title { color: var(--muted); }
+  .done-stamp { font-size: 11.5px; font-weight: 800; color: var(--forest); background: rgba(180,241,5,.35); padding: 3px 9px; border-radius: 999px; }
+
+  .fab { position: absolute; right: 18px; bottom: 96px; display: flex; align-items: center; gap: 8px; height: 54px; padding: 0 22px 0 18px; border: 0; border-radius: 18px; background: var(--forest); color: #fff; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; z-index: 5; }
+  .fab svg { stroke: var(--lime); stroke-width: 2.6; }
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 80px; background: #fff; display: flex; justify-content: space-around; align-items: flex-start; padding-top: 10px; font-size: 11px; font-weight: 700; color: var(--muted); border-top: 1px solid var(--line); z-index: 5; }
+  .nav div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .nav .on { color: var(--forest); }
+  .nav .on b { background: var(--lime); }
+  .nav b { display: grid; place-items: center; width: 54px; height: 30px; border-radius: 999px; }
+
+  .undo { position: absolute; left: 14px; right: 14px; bottom: 164px; display: none; align-items: center; gap: 10px; padding: 9px 9px 9px 16px; border-radius: 999px; background: var(--forest); color: #fff; overflow: hidden; z-index: 8; }
+  .undo.on { display: flex; animation: up .25s ease; }
+  .undo span { flex: 1; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .undo span b { color: var(--lime); }
+  .undo button { border: 0; border-radius: 999px; background: var(--lime); color: var(--forest); font: inherit; font-size: 13px; font-weight: 800; padding: 8px 16px; cursor: pointer; }
+  .undo i { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--lime); transform-origin: left; }
+  .undo.on i { animation: shrink 5s linear forwards; }
+  @keyframes shrink { to { transform: scaleX(0); } }
+  @keyframes up { from { transform: translateY(10px); opacity: 0; } }
+
+  /* Sheet */
+  .veil { position: absolute; inset: 0; background: rgba(5,28,18,.5); display: none; z-index: 20; }
+  .veil.on { display: block; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 26px 26px 0 0; padding: 10px 18px 26px; max-height: 88%; overflow-y: auto; transform: translateY(100%); transition: transform .3s cubic-bezier(.22,1,.36,1); z-index: 21; }
+  .sheet.on { transform: none; }
+  .grip { width: 40px; height: 4px; border-radius: 999px; background: #D5DDD8; margin: 0 auto 14px; }
+  .sheet h2 { margin: 0 0 14px; font-size: 18px; font-weight: 800; }
+  .label { display: block; margin: 16px 0 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .field { width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; font: inherit; font-size: 15px; outline: 0; }
+  .field:focus { border-color: var(--forest); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; }
+  .chip.on { background: var(--forest); border-color: var(--forest); color: #fff; }
+  .step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .step .circle { border-style: dashed; }
+  .step input { flex: 1; border: 0; border-bottom: 1.5px solid var(--line); padding: 8px 2px; font: inherit; font-size: 15px; outline: 0; }
+  .step input:focus { border-color: var(--forest); }
+  .step button { border: 0; background: none; color: var(--muted); cursor: pointer; width: 30px; height: 30px; display: grid; place-items: center; }
+  .add-step { border: 0; background: none; color: var(--forest); font: inherit; font-size: 14px; font-weight: 800; padding: 6px 0; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .hint.err { color: var(--red); font-weight: 700; }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .btn { flex: 1; min-height: 50px; border-radius: 14px; border: 0; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+  .btn.primary { background: var(--forest); color: #fff; }
+  .btn.primary:disabled { opacity: .35; cursor: not-allowed; }
+  .btn.ghost { background: var(--bg); color: var(--forest); }
+  .btn.danger { flex: 0 0 auto; padding: 0 16px; background: var(--red-bg); color: var(--red); }
+
+  /* Notes column */
+  .notes { width: 380px; }
+  .notes h2 { margin: 6px 0 4px; font-size: 22px; font-weight: 800; }
+  .notes > p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+  .rule { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid #C9D3CD; }
+  .rule b { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--forest); color: var(--lime); display: grid; place-items: center; font-size: 13px; }
+  .rule div { font-size: 14px; line-height: 1.5; }
+  .rule strong { display: block; }
+  .try { margin-top: 18px; padding: 14px 16px; border-radius: 14px; background: #fff; font-size: 13.5px; line-height: 1.6; }
+  .try strong { display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div class="status"><span>9:41</span><span>Tiyo</span></div>
+      <div class="head">
+        <div>
+          <h1>Tasks</h1>
+          <p id="summary"></p>
+        </div>
+        <button class="icon-btn" id="search-btn" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      </div>
+      <label class="search" id="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search-input" placeholder="Search tasks and subtasks"></label>
+      <div class="tabs">
+        <button class="tab on" data-tab="active">Active <span id="count-active"></span></button>
+        <button class="tab" data-tab="done">Completed <span id="count-done"></span></button>
+      </div>
+      <div id="list"></div>
+    </div>
+
+    <button class="fab" id="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New task</button>
+    <div class="undo" id="undo"><span id="undo-text"></span><button id="undo-btn">Undo</button><i></i></div>
+    <div class="nav">
+      <div><b><svg viewBox="0 0 24 24"><path d="M3 10 12 3l9 7v10H3z"/></svg></b>Today</div>
+      <div><b><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18"/></svg></b>Week</div>
+      <div class="on"><b><svg viewBox="0 0 24 24"><path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/></svg></b>Tasks</div>
+      <div><b><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></b>Me</div>
+    </div>
+
+    <div class="veil" id="veil"></div>
+    <div class="sheet" id="sheet">
+      <div class="grip"></div>
+      <h2 id="sheet-title">New task</h2>
+      <label class="label" for="f-title">Task</label>
+      <input class="field" id="f-title" placeholder="e.g. Prepare weekly report" maxlength="180">
+      <span class="label">Due</span>
+      <div class="chips" id="f-due">
+        <button class="chip" data-due="0">Today</button>
+        <button class="chip" data-due="1">Tomorrow</button>
+        <button class="chip" data-due="7">Next week</button>
+        <button class="chip" data-due="pick">Pick date</button>
+      </div>
+      <span class="label">Subtasks</span>
+      <div id="f-steps"></div>
+      <button class="add-step" id="add-step"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add subtask</button>
+      <p class="hint" id="f-hint">Add at least one subtask. The task is completed automatically when every subtask is ticked.</p>
+      <div class="sheet-actions">
+        <button class="btn danger" id="f-delete" style="display:none">Delete</button>
+        <button class="btn ghost" id="f-cancel">Cancel</button>
+        <button class="btn primary" id="f-save" disabled>Create task</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h2>Tasks redesign: mockup</h2>
+    <p>Sample data only. Everything on the phone is clickable.</p>
+    <div class="rule"><b>1</b><div><strong>A task is a title with subtasks</strong>You can't save a task without at least one subtask. The task itself has no tick box.</div></div>
+    <div class="rule"><b>2</b><div><strong>Tick subtasks right in the list</strong>Every subtask has its own circle on the card, so you never have to open anything to make progress.</div></div>
+    <div class="rule"><b>3</b><div><strong>The task finishes itself</strong>Ticking the last subtask completes the task and moves it to Completed. You get 5 seconds to undo.</div></div>
+    <div class="rule"><b>4</b><div><strong>Progress at a glance</strong>Each card shows the due date, a progress bar and "2/3". Ticked subtasks fold away under "Show 1 done".</div></div>
+    <div class="rule"><b>5</b><div><strong>One button to add</strong>"New task" opens one form: title, a quick due date, and subtasks. Press Enter to add the next subtask.</div></div>
+    <div class="rule"><b>6</b><div><strong>Edit and delete in one place</strong>The ⋯ button opens the same form to rename, change the date, add or remove subtasks, or delete. The last subtask can't be removed.</div></div>
+    <div class="rule"><b>7</b><div><strong>Active and Completed tabs</strong>Active is grouped into Overdue, Today, This week and Later. Unticking a subtask on a completed task moves it back to Active.</div></div>
+    <div class="try"><strong>Try this</strong>Tick "Run seed script" to finish a task and see the undo bar. Tap New task and try saving without a subtask. Tap ⋯ on a card to edit it.</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var DAY = 86400000;
+  var today = new Date(); today.setHours(12, 0, 0, 0);
+  function iso(offset) { return new Date(today.getTime() + offset * DAY).toISOString().slice(0, 10); }
+  var T = iso(0);
+  var tasks = [
+    { id: 1, title: 'Prepare weekly report', due: iso(-1), subs: [
+      { t: 'Collect hours from my diary', d: true }, { t: 'Write a short summary', d: false }, { t: 'Send to supervisor', d: false }] },
+    { id: 2, title: 'Set up the test environment', due: T, subs: [
+      { t: 'Install Node 20', d: true }, { t: 'Clone the repo', d: true }, { t: 'Run seed script', d: false }] },
+    { id: 3, title: 'Read onboarding documents', due: iso(3), subs: [
+      { t: 'Security policy', d: false }, { t: 'Code style guide', d: false }] },
+    { id: 4, title: 'Plan final presentation', due: iso(12), subs: [
+      { t: 'Outline the slides', d: false }, { t: 'Book a meeting room', d: false }, { t: 'Rehearse once', d: false }] },
+    { id: 5, title: 'Submit week 3 timesheet', due: iso(-2), doneAt: 'Yesterday', subs: [
+      { t: 'Check hours', d: true }, { t: 'Get sign-off', d: true }] }
+  ];
+  var tab = 'active', query = '', openDone = {}, undoState = null, undoTimer = null, editing = null, nextId = 6;
+
+  function complete(task) { return task.subs.length > 0 && task.subs.every(function (s) { return s.d; }); }
+  function dueLabel(d) {
+    if (!d) return { text: 'No date', cls: '' };
+    if (d < T) return { text: d === iso(-1) ? 'Overdue · yesterday' : 'Overdue · ' + fmt(d), cls: 'overdue' };
+    if (d === T) return { text: 'Today', cls: 'today' };
+    if (d === iso(1)) return { text: 'Tomorrow', cls: '' };
+    if (d <= iso(6)) return { text: new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long' }), cls: '' };
+    return { text: fmt(d), cls: '' };
+  }
+  function fmt(d) { return new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var CHECK = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+  var DOTS = '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>';
+
+  function matches(task) {
+    if (!query) return true;
+    var q = query.toLowerCase();
+    return task.title.toLowerCase().indexOf(q) !== -1 || task.subs.some(function (s) { return s.t.toLowerCase().indexOf(q) !== -1; });
+  }
+
+  function cardHtml(task) {
+    var done = task.subs.filter(function (s) { return s.d; }).length;
+    var total = task.subs.length;
+    var isComplete = complete(task);
+    var due = dueLabel(task.due);
+    var open = task.subs.map(function (s, i) { return { s: s, i: i }; }).filter(function (x) { return !x.s.d; });
+    var ticked = task.subs.map(function (s, i) { return { s: s, i: i }; }).filter(function (x) { return x.s.d; });
+    function sub(x) {
+      return '<div class="sub' + (x.s.d ? ' done' : '') + '" data-task="' + task.id + '" data-sub="' + x.i + '"><span class="circle">' + CHECK + '</span><span class="sub-text">' + esc(x.s.t) + '</span></div>';
+    }
+    var html = '<div class="card' + (isComplete ? ' complete' : '') + '" id="card-' + task.id + '">' +
+      '<div class="card-top"><div class="card-title">' + esc(task.title) + '</div><button class="more" data-edit="' + task.id + '" aria-label="Edit">' + DOTS + '</button></div>' +
+      '<div class="card-meta">' + (isComplete
+        ? '<span class="done-stamp">Completed ' + (task.doneAt || 'just now') + '</span>'
+        : '<span class="due ' + due.cls + '">' + due.text + '</span>') +
+      '<div class="bar"><i style="width:' + Math.round(done / total * 100) + '%"></i></div><span class="count">' + done + '/' + total + '</span></div>';
+    html += open.map(sub).join('');
+    if (ticked.length) {
+      if (isComplete || openDone[task.id]) {
+        html += ticked.map(sub).join('');
+        if (!isComplete) html += '<button class="done-toggle" data-fold="' + task.id + '">Hide done</button>';
+      } else {
+        html += '<button class="done-toggle" data-fold="' + task.id + '">Show ' + ticked.length + ' done</button>';
+      }
+    }
+    return html + '</div>';
+  }
+
+  function render() {
+    var active = tasks.filter(function (t) { return !complete(t); });
+    var doneList = tasks.filter(complete);
+    document.getElementById('count-active').textContent = active.length;
+    document.getElementById('count-done').textContent = doneList.length;
+    var overdue = active.filter(function (t) { return t.due && t.due < T; }).length;
+    var dueToday = active.filter(function (t) { return t.due === T; }).length;
+    document.getElementById('summary').innerHTML = active.length
+      ? active.length + ' active' + (overdue ? ' · <b>' + overdue + ' overdue</b>' : '') + (dueToday ? ' · ' + dueToday + ' due today' : '')
+      : 'All caught up';
+    var list = document.getElementById('list');
+    var html = '';
+    if (tab === 'active') {
+      var wk = iso(7);
+      [['Overdue', 'overdue', function (t) { return t.due && t.due < T; }],
+       ['Today', '', function (t) { return t.due === T; }],
+       ['This week', '', function (t) { return t.due > T && t.due <= wk; }],
+       ['Later', '', function (t) { return !t.due || t.due > wk; }]].forEach(function (g) {
+        var items = active.filter(g[2]).filter(matches);
+        if (items.length) html += '<div class="group"><div class="group-title ' + g[1] + '">' + g[0] + ' · ' + items.length + '</div>' + items.map(cardHtml).join('') + '</div>';
+      });
+      if (!html) html = '<div class="group"><div class="card"><div class="card-title">Nothing left to do</div><p style="color:var(--muted);font-size:14px;margin:6px 0 8px">Tap New task to plan your next piece of work.</p></div></div>';
+    } else {
+      html = '<div class="group">' + doneList.filter(matches).map(cardHtml).join('') + '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  function showUndo(text, restore) {
+    clearTimeout(undoTimer);
+    undoState = restore;
+    var bar = document.getElementById('undo');
+    document.getElementById('undo-text').innerHTML = text;
+    bar.classList.remove('on'); void bar.offsetWidth; bar.classList.add('on');
+    undoTimer = setTimeout(function () { bar.classList.remove('on'); undoState = null; }, 5000);
+  }
+
+  document.getElementById('list').addEventListener('click', function (e) {
+    var subEl = e.target.closest('.sub');
+    var fold = e.target.closest('[data-fold]');
+    var edit = e.target.closest('[data-edit]');
+    if (edit) { openSheet(tasks.filter(function (t) { return t.id === +edit.dataset.edit; })[0]); return; }
+    if (fold) { openDone[fold.dataset.fold] = !openDone[fold.dataset.fold]; render(); return; }
+    if (!subEl) return;
+    var task = tasks.filter(function (t) { return t.id === +subEl.dataset.task; })[0];
+    var s = task.subs[+subEl.dataset.sub];
+    var wasComplete = complete(task);
+    s.d = !s.d;
+    var nowComplete = complete(task);
+    var restore = function () { s.d = !s.d; if (!complete(task)) delete task.doneAt; render(); };
+    if (nowComplete && !wasComplete) {
+      task.doneAt = 'just now';
+      subEl.classList.add('done');
+      var card = document.getElementById('card-' + task.id);
+      setTimeout(function () { card.classList.add('leaving'); }, 250);
+      setTimeout(render, 600);
+      showUndo('<b>Task complete:</b> ' + esc(task.title), restore);
+    } else if (wasComplete && !nowComplete) {
+      delete task.doneAt;
+      render();
+      showUndo('Moved back to Active: ' + esc(task.title), restore);
+    } else {
+      render();
+      if (s.d) showUndo('Ticked "' + esc(s.t) + '"', restore);
+    }
+  });
+  document.getElementById('undo-btn').addEventListener('click', function () {
+    if (undoState) undoState();
+    undoState = null;
+    document.getElementById('undo').classList.remove('on');
+  });
+
+  document.querySelectorAll('.tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      tab = b.dataset.tab;
+      document.querySelectorAll('.tab').forEach(function (x) { x.classList.toggle('on', x === b); });
+      render();
+    });
+  });
+  document.getElementById('search-btn').addEventListener('click', function () {
+    var s = document.getElementById('search');
+    s.classList.toggle('on');
+    if (s.classList.contains('on')) document.getElementById('search-input').focus();
+  });
+  document.getElementById('search-input').addEventListener('input', function (e) { query = e.target.value.trim(); render(); });
+
+  /* Sheet */
+  var dueChoice = null;
+  function stepRow(value) {
+    var row = document.createElement('div');
+    row.className = 'step';
+    row.innerHTML = '<span class="circle"></span><input placeholder="Subtask" maxlength="180"><button aria-label="Remove"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
+    var input = row.querySelector('input');
+    input.value = value || '';
+    input.addEventListener('input', validate);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); var r = stepRow(''); row.after(r); r.querySelector('input').focus(); validate(); }
+    });
+    row.querySelector('button').addEventListener('click', function () {
+      if (document.querySelectorAll('#f-steps .step').length === 1) { input.value = ''; validate(); return; }
+      row.remove(); validate();
+    });
+    return row;
+  }
+  function steps() { return [].map.call(document.querySelectorAll('#f-steps input'), function (i) { return i.value.trim(); }).filter(Boolean); }
+  function validate() {
+    var title = document.getElementById('f-title').value.trim();
+    var n = steps().length;
+    var hint = document.getElementById('f-hint');
+    document.getElementById('f-save').disabled = !title || !n;
+    if (title && !n) { hint.textContent = 'Add at least one subtask to save this task.'; hint.className = 'hint err'; }
+    else { hint.textContent = 'Add at least one subtask. The task is completed automatically when every subtask is ticked.'; hint.className = 'hint'; }
+  }
+  function openSheet(task) {
+    editing = task || null;
+    document.getElementById('sheet-title').textContent = task ? 'Edit task' : 'New task';
+    document.getElementById('f-save').textContent = task ? 'Save changes' : 'Create task';
+    document.getElementById('f-delete').style.display = task ? '' : 'none';
+    document.getElementById('f-title').value = task ? task.title : '';
+    var box = document.getElementById('f-steps');
+    box.innerHTML = '';
+    (task ? task.subs.map(function (s) { return s.t; }) : ['']).forEach(function (t) { box.appendChild(stepRow(t)); });
+    dueChoice = task ? task.due : null;
+    document.querySelectorAll('#f-due .chip').forEach(function (c) {
+      var off = c.dataset.due;
+      c.classList.toggle('on', !!dueChoice && off !== 'pick' && iso(+off) === dueChoice);
+    });
+    validate();
+    document.getElementById('veil').classList.add('on');
+    document.getElementById('sheet').classList.add('on');
+    if (!task) setTimeout(function () { document.getElementById('f-title').focus(); }, 300);
+  }
+  function closeSheet() {
+    document.getElementById('veil').classList.remove('on');
+    document.getElementById('sheet').classList.remove('on');
+  }
+  document.getElementById('fab').addEventListener('click', function () { openSheet(null); });
+  document.getElementById('veil').addEventListener('click', closeSheet);
+  document.getElementById('f-cancel').addEventListener('click', closeSheet);
+  document.getElementById('f-title').addEventListener('input', validate);
+  document.getElementById('add-step').addEventListener('click', function () {
+    var r = stepRow(''); document.getElementById('f-steps').appendChild(r); r.querySelector('input').focus();
+  });
+  document.querySelectorAll('#f-due .chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      var on = !c.classList.contains('on');
+      document.querySelectorAll('#f-due .chip').forEach(function (x) { x.classList.remove('on'); });
+      if (on) c.classList.add('on');
+      dueChoice = on ? (c.dataset.due === 'pick' ? iso(10) : iso(+c.dataset.due)) : null;
+    });
+  });
+  document.getElementById('f-save').addEventListener('click', function () {
+    var title = document.getElementById('f-title').value.trim();
+    var list = steps();
+    if (!title || !list.length) return;
+    if (editing) {
+      var old = editing.subs;
+      editing.title = title;
+      editing.due = dueChoice;
+      editing.subs = list.map(function (t) {
+        var match = old.filter(function (s) { return s.t === t; })[0];
+        return { t: t, d: match ? match.d : false };
+      });
+    } else {
+      tasks.push({ id: nextId++, title: title, due: dueChoice, subs: list.map(function (t) { return { t: t, d: false }; }) });
+    }
+    closeSheet();
+    render();
+  });
+  document.getElementById('f-delete').addEventListener('click', function () {
+    var task = editing, index = tasks.indexOf(task);
+    tasks.splice(index, 1);
+    closeSheet();
+    render();
+    showUndo('Deleted "' + esc(task.title) + '"', function () { tasks.splice(index, 0, task); render(); });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
