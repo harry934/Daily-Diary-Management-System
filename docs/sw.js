@@ -1,5 +1,5 @@
 /* Tiyo shell service worker. The Apps Script iframe is cross-origin and always needs the network. */
-var CACHE = 'tiyo-shell-v1';
+var CACHE = 'tiyo-shell-v2';
 var SHELL = [
   './',
   './index.html',

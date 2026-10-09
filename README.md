@@ -52,3 +52,5 @@ See [INVITE.md](INVITE.md) for how to create an account and get started.
 ## About this repository
 
 This public repository hosts the GitHub Pages shell in [`docs/`](docs): the installable web app wrapper, the install guide, the offline page, icons and the service worker. The application itself runs in a private Google Apps Script project and is loaded into the shell.
+
+**Releasing app changes:** run `clasp push`, then redeploy the pinned web app (`clasp deploy -i <deploymentId>`). Push alone does not update the live `/exec` URL. Bump the `v=` query on the iframe in `docs/index.html` and publish `docs/` to GitHub Pages so installed copies pick up the new shell.
